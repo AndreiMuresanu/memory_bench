@@ -26,7 +26,7 @@ behaviors:
           hidden_units: 256
         learning_rate: 0.0003
     keep_checkpoints: 5
-    max_steps: 5000000
+    max_steps: 1000000
     time_horizon: 100
     summary_freq: 10000
 
