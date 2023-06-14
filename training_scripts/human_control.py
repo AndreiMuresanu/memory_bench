@@ -18,7 +18,7 @@ class human_env():
 		self.save_dir = save_dir
 		self.player_name = player_name
 
-		unity_env = UnityEnvironment(path_to_env, seed=2)
+		unity_env = UnityEnvironment(path_to_env, seed=0)
 		self.env = UnityToGymWrapper(unity_env, uint8_visual=True)
 
 		pygame.init()
@@ -43,7 +43,7 @@ class human_env():
 		self.window.blit(score_dis, (50, int(self.window_size / 2) - 50 ))
 
 
-	def play_game(self, episode_count=5):
+	def play_game(self, episode_count=99999):
 		filename = f"{self.player_name}_{self.env_name}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 		with open(os.path.join(self.save_dir, filename), 'w', newline='') as file:
 			writer = csv.writer(file)
@@ -106,8 +106,10 @@ if __name__ == '__main__':
 	save_dir = r'C:\Users\georg\Documents\andreis_shit\memory_bench\training_scripts\human_results'
 	player_name = 'andrei'
 
-	env_info = ('AllergicAgent',
-	     		r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\AllergicAgent\windows\pixel_input\single_agent\memory_palace_2.exe')
+	#env_info = ('AllergicAgent', r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\AllergicAgent\windows\pixel_input\single_agent\memory_palace_2.exe')
+	#env_info = ('Hallway', r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\Hallway\windows\pixel_input\single_agent\memory_palace_2.exe')
+	#env_info = ('MatchingPairs', r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\MatchingPairs\windows\pixel_input\single_agent\memory_palace_2.exe')
+	env_info = ('RecipeRecall', r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\RecipeRecall\windows\pixel_input\single_agent\memory_palace_2.exe')
 	
 	env = human_env(env_name=env_info[0], path_to_env=env_info[1], save_dir=save_dir, player_name=player_name)
 	env.play_game()
