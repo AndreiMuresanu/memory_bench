@@ -83,7 +83,7 @@ class human_env():
 			pygame.display.update()
 			
 			if done:
-				print('finished episode:', cur_episode)
+				print('finished episode:', cur_episode, 'final score:', episode_reward)
 				with open(os.path.join(self.save_dir, filename), 'a', newline='') as file:
 					writer = csv.writer(file)
 					writer.writerow([cur_episode] + cumulative_reward)
@@ -103,13 +103,15 @@ class human_env():
 
 
 if __name__ == '__main__':
-	save_dir = r'C:\Users\georg\Documents\andreis_shit\memory_bench\training_scripts\human_results'
-	player_name = 'andrei'
+	save_dir = r'./human_results'
+	#player_name = 'andrei'
+	#player_name = 'george'
+	player_name = 'test'
 
-	#env_info = ('AllergicAgent', r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\AllergicAgent\windows\pixel_input\single_agent\memory_palace_2.exe')
-	#env_info = ('Hallway', r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\Hallway\windows\pixel_input\single_agent\memory_palace_2.exe')
-	#env_info = ('MatchingPairs', r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\MatchingPairs\windows\pixel_input\single_agent\memory_palace_2.exe')
-	env_info = ('RecipeRecall', r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\RecipeRecall\windows\pixel_input\single_agent\memory_palace_2.exe')
+	env_info = ('AllergicAgent', 32, r'../unity_projects\memory_palace_2\Builds\AllergicAgent\windows\pixel_input\single_agent\memory_palace_2.exe')
+	#env_info = ('Hallway', 5, r'../unity_projects\memory_palace_2\Builds\Hallway\windows\pixel_input\single_agent\memory_palace_2.exe')
+	#env_info = ('MatchingPairs', 5, r'../unity_projects\memory_palace_2\Builds\MatchingPairs\medium\windows\pixel_input\single_agent\memory_palace_2.exe')
+	#env_info = ('RecipeRecall', 19, r'../unity_projects\memory_palace_2\Builds\RecipeRecall\windows\pixel_input\single_agent\memory_palace_2.exe')
 	
-	env = human_env(env_name=env_info[0], path_to_env=env_info[1], save_dir=save_dir, player_name=player_name)
-	env.play_game()
+	env = human_env(env_name=env_info[0], path_to_env=env_info[2], save_dir=save_dir, player_name=player_name)
+	env.play_game(episode_count=env_info[1])
