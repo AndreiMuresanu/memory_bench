@@ -1,25 +1,29 @@
-import gymnasium as gym
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.envs.unity_gym_env import UnityToGymWrapper
-from PIL import Image
 import pygame
-from inputimeout import inputimeout
 import numpy as np
 import cv2
 import time
+from datetime import datetime
+import os
+import csv
 
 
 class human_env():
-	def __init__(self, path_to_env) -> None:
-		self.user_time_per_frame = 2	#in seconds
+	def __init__(self, env_name, path_to_env, save_dir, player_name) -> None:
+		self.fps = 8
 		self.score_screen_duration = 2	#in seconds
-		self.window_size = 8 * 84  # The size of the PyGame window
+		self.window_size = 8 * 84  #the size of the PyGame window
+		self.env_name = env_name
+		self.save_dir = save_dir
+		self.player_name = player_name
 
 		unity_env = UnityEnvironment(path_to_env, seed=2)
 		self.env = UnityToGymWrapper(unity_env, uint8_visual=True)
 
 		pygame.init()
 		self.window = pygame.display.set_mode((self.window_size, self.window_size))
+		self.clock = pygame.time.Clock()
 		
 		self.info_font = pygame.font.SysFont("Arial", 28, bold=True)
 		self.final_score_font = pygame.font.SysFont("Arial", 70, bold=True)
@@ -39,12 +43,20 @@ class human_env():
 		self.window.blit(score_dis, (50, int(self.window_size / 2) - 50 ))
 
 
-	def play_game(self):
+	def play_game(self, episode_count=5):
+		filename = f"{self.player_name}_{self.env_name}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+		with open(os.path.join(self.save_dir, filename), 'w', newline='') as file:
+			writer = csv.writer(file)
+			writer.writerow(['cur_episode', 'cumulative_reward'])
+		
 		observation = self.env.reset()
 		playing_game = True
-		#for cur_step in range(100):
+		cumulative_reward = []
 		episode_reward = 0
+		cur_episode = 0
 		while playing_game:
+			self.clock.tick(self.fps)
+
 			user_inp = pygame.key.get_pressed()
 			if user_inp[pygame.K_w] or user_inp[pygame.K_UP]:
 				action = 1
@@ -57,34 +69,45 @@ class human_env():
 			else:
 				action = 0
 				
+			for event in pygame.event.get():
+				if event.type == pygame.QUIT:
+					playing_game = False
+
 			observation, reward, done, info = self.env.step(action) #lol, this is different from both ml-agents docs and gymnasium docs
 
 			episode_reward += reward
-
-			#this resets the env and starts a new epoch
-			for event in pygame.event.get():
-				if event.type == pygame.QUIT:
-					#done = True
-					playing_game = False
+			cumulative_reward.append(episode_reward)
 
 			self.render_frame(observation)
 			self.render_info(episode_reward)
 			pygame.display.update()
 			
 			if done:
+				print('finished episode:', cur_episode)
+				with open(os.path.join(self.save_dir, filename), 'a', newline='') as file:
+					writer = csv.writer(file)
+					writer.writerow([cur_episode] + cumulative_reward)
+
 				self.display_final_score(episode_reward)
 				pygame.display.update()
 				time.sleep(self.score_screen_duration)
 
 				observation = self.env.reset()
+				cumulative_reward = []
 				episode_reward = 0
+				cur_episode += 1
+
+				if cur_episode >= episode_count:
+					break
 		self.env.close()
 
 
 if __name__ == '__main__':
-	#path_to_env = r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\Hallway\windows\pixel_input\memory_palace_2.exe'
-	#path_to_env = r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\RecipeRecall\windows\pixel_input\memory_palace_2.exe'
-	path_to_env = r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\AllergicAgent\windows\pixel_input\single_agent\memory_palace_2.exe'
+	save_dir = r'C:\Users\georg\Documents\andreis_shit\memory_bench\training_scripts\human_results'
+	player_name = 'andrei'
+
+	env_info = ('AllergicAgent',
+	     		r'C:\Users\georg\Documents\andreis_shit\memory_bench\unity_projects\memory_palace_2\Builds\AllergicAgent\windows\pixel_input\single_agent\memory_palace_2.exe')
 	
-	env = human_env(path_to_env=path_to_env)
+	env = human_env(env_name=env_info[0], path_to_env=env_info[1], save_dir=save_dir, player_name=player_name)
 	env.play_game()
