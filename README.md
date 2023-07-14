@@ -62,6 +62,7 @@ In this task, the agent is initially presented with a goal token, represented by
 
 # Setup
 - should be extremely simple (follow colab code)
+- link mlagents install tutorials
 
 # Quickstart
 
