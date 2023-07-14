@@ -1,4 +1,6 @@
 # ReMEMber: Assessing Memory Capabilities of RL Agents
+Andrei Muresanu*, Marta Skreta*, Kourosh Darvish, Alán Aspuru-Guzik, Animesh Garg
+
 ArXiv | [Colab](https://colab.research.google.com/drive/1E3TPO9z1cOH1p63lvwxeWon40xn5Ekvc?usp=sharing)
 
 Benchmarking RL memory
