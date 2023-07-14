@@ -1,4 +1,4 @@
-# ReMEMber
+# ReMEMber: Assessing Memory Capabilities of RL Agents
 Benchmarking RL memory
 
 # Abstract
