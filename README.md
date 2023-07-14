@@ -3,7 +3,7 @@ Andrei Muresanu*, Marta Skreta*, Kourosh Darvish, Alán Aspuru-Guzik, Animesh Ga
 
 ArXiv | [Colab](https://colab.research.google.com/drive/1E3TPO9z1cOH1p63lvwxeWon40xn5Ekvc?usp=sharing)
 
-Benchmarking RL memory
+This is the official repository of the ReMEMber benchmark. It contains all ReMEMber tasks, documentation, and additional code to aid with development.
 
 # Table of Contents
 
