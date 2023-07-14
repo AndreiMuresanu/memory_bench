@@ -68,7 +68,7 @@ In this task, the agent is initially presented with a goal token, represented by
 # Quickstart
 
 ## Colab Examples
-### GYM API
+### Gym API
 ### PettingZoo API
 ### Unity API
 ### Human Control
