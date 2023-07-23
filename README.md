@@ -7,7 +7,7 @@ This is the official repository of the ReMEMber benchmark. It contains all ReMEM
 
 # Table of Contents
 
-[Abstract](https://github.com/AndreiMuresanu/memory_bench/edit/master/README.md#abstract)
+[Abstract](https://github.com/AndreiMuresanu/memory_bench/master/README.md#abstract)
 
 [Task Descriptions](https://github.com/AndreiMuresanu/memory_bench/edit/master/README.md#task-descriptions)
 
