@@ -27,20 +27,16 @@ Memory is a critical component required for intelligent decision-making and rema
 # Task Descriptions
 
 ## Allergic Robot
-- screenshots
-- videos
 
-
-https://github.com/AndreiMuresanu/memory_bench/assets/44536960/e93da52a-78b9-4447-b5e7-9d5b277e6bf2
-
+https://github.com/AndreiMuresanu/memory_bench/assets/44536960/534834bd-e381-4fe8-b47b-1749710c3f56
 
 The allergic robot task is designed to evaluate an agent's ability to recall strong emotional events akin to flashbulb memories (a type of episodic memory). In this task, there are a total of 48 unique foods (the number of unique foods is modifiable). Each round, 40 random foods are spawned in the environment (the number of spwaned food is modifiable). At the beginning of the task, each food is assigned a value that determines the associated reward according to three categories: foods the agent is allergic to, foods that it loves, and normal food. The allergy-inducing foods have a 10\% probability of occurrence and are associated with a reward of -5, representing a strong negative reaction for the agent (this reward and probability are modifiable). The tasty foods also have a 10\% probability of occurrence and are associated with a reward of +5, representing a highly positive reaction for the agent (this reward and probability are modifiable). The remaining 80\% of the foods are considered normal, and their rewards are uniformly sampled in [-0.1, 1] (this reward and probability are modifiable).
 
 The objective of the task is for the agent to to identify and remember which specific food items it is allergic to in order to avoid incurring the negative emotional consequence. At the same time, it should identify the foods it loves. By incorporating emotional rewards and consequences, the task elicits the agent's ability to recall and utilize information related to strong emotional events.
 
 ## Recipe Recall
-- screenshots
-- videos
+
+https://github.com/AndreiMuresanu/memory_bench/assets/44536960/81cd8c6b-ec36-4a37-8166-ba1b728ce3f5
 
 Recipe recall involves presenting an agent with a large set of randomly selected ingredients. There are a total of 16 food types and 50 unique recipes in the environment (these are default values which are modifiable). Each recipe is assigned a tastiness value ranging from -0.5 to +5, representing its tastiness (this tastiness range is modifiable). The inclusion of ingredients in a recipe is randomized, with each ingredient having a 15\% chance of being included (this probability is modifiable).
 
