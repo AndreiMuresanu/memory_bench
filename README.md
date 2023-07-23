@@ -11,6 +11,8 @@ This is the official repository of the ReMEMber benchmark. It contains all ReMEM
 
 [Task Descriptions](https://github.com/AndreiMuresanu/memory_bench/edit/master/README.md#task-descriptions)
 
+* [Allergic Robot](https://github.com/AndreiMuresanu/memory_bench/edit/master/README.md#allergic-robot)
+
 [Setup](https://github.com/AndreiMuresanu/memory_bench/edit/master/README.md#setup)
 
 [Quickstart](https://github.com/AndreiMuresanu/memory_bench/edit/master/README.md#quickstart)
@@ -92,6 +94,8 @@ In this task, the agent is initially presented with a goal token, represented by
 - video of human control on allergic agent
 - path to human control script
 - short description
+
+## Parallelism Mode
 
 ## Virtual Display
 
