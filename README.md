@@ -9,19 +9,19 @@ This is the official repository of the ReMEMber benchmark. It contains all ReMEM
 
 [Abstract](https://github.com/AndreiMuresanu/memory_bench/tree/master#abstract)
 
-[Task Descriptions](https://github.com/AndreiMuresanu/memory_bench/tree/master/README.md#task-descriptions)
+[Task Descriptions](https://github.com/AndreiMuresanu/memory_bench/tree/master#task-descriptions)
 
-* [Allergic Robot](https://github.com/AndreiMuresanu/memory_bench/tree/master/README.md#allergic-robot)
+* [Allergic Robot](https://github.com/AndreiMuresanu/memory_bench/tree/master#allergic-robot)
 
-[Setup](https://github.com/AndreiMuresanu/memory_bench/tree/master/README.md#setup)
+[Setup](https://github.com/AndreiMuresanu/memory_bench/tree/master#setup)
 
-[Quickstart](https://github.com/AndreiMuresanu/memory_bench/tree/master/README.md#quickstart)
+[Quickstart](https://github.com/AndreiMuresanu/memory_bench/tree/master#quickstart)
 
-[Additional Documentation](https://github.com/AndreiMuresanu/memory_bench/tree/master/README.md#additional-documentation)
+[Additional Documentation](https://github.com/AndreiMuresanu/memory_bench/tree/master#additional-documentation)
 
-[Comments](https://github.com/AndreiMuresanu/memory_bench/tree/master/README.md#comments)
+[Comments](https://github.com/AndreiMuresanu/memory_bench/tree/master#comments)
 
-[BibTex](https://github.com/AndreiMuresanu/memory_bench/tree/master/README.md#bibtex)
+[BibTex](https://github.com/AndreiMuresanu/memory_bench/tree/master#bibtex)
 
 # Abstract
 Memory is a critical component required for intelligent decision-making and remains an elusive frontier in the realm of reinforcement learning (RL) agents. Surprisingly, no standardized method exists to gauge the memory capabilities of RL agents, stalling progress in developing truly intelligent systems. Addressing this gap, we present ReMEMber —a benchmark that improves the assessment of RL agents’ memory capabilities. Drawing inspiration from studies in psychology, ReMEMber introduces an evaluation framework that evaluates multiple different aspects of memory, including spatial, associative, episodic, and implicit, among others. Spanning across four distinctive tasks, offering increasing levels of difficulty, and using three different input modalities, ReMEMber enables the evaluation of an RL agents’ memory abilities. We benchmark these datasets on popular RL algorithms, including PPO and SAC. By leveraging this benchmark, researchers and practitioners can gain valuable insights into RL agents’ memory capacity and performance, facilitating advancements in memory-enhanced RL algorithms and fostering the development of more intelligent decision-making systems.
