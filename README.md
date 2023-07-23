@@ -17,6 +17,13 @@ This is the official repository of the ReMEMber benchmark. It contains all ReMEM
 
 [Quickstart](https://github.com/AndreiMuresanu/memory_bench/tree/master#quickstart)
 
+* [Colab Examples](https://github.com/AndreiMuresanu/memory_bench/tree/master#colab-examples)
+  * [Gym API](https://github.com/AndreiMuresanu/memory_bench/tree/master#gym-api)
+  * [PettingZoo API](https://github.com/AndreiMuresanu/memory_bench/tree/master#pettingzoo-api)
+* [Human Control](https://github.com/AndreiMuresanu/memory_bench/tree/master#human-control)
+* [Parallelismn Modes](https://github.com/AndreiMuresanu/memory_bench/tree/master#parallelism-modes)
+* [Virtual Display](https://github.com/AndreiMuresanu/memory_bench/tree/master#virtual-display)
+
 [Additional Documentation](https://github.com/AndreiMuresanu/memory_bench/tree/master#additional-documentation)
 
 [Comments](https://github.com/AndreiMuresanu/memory_bench/tree/master#comments)
@@ -90,12 +97,13 @@ In this task, the agent is initially presented with a goal token, represented by
 ### Gym API
 ### PettingZoo API
 ### Unity API
-### Human Control
+
+## Human Control
 - video of human control on allergic agent
 - path to human control script
 - short description
 
-## Parallelism Mode
+## Parallelism Modes
 
 ## Virtual Display
 
