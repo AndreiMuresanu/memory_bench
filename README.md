@@ -52,8 +52,8 @@ Recipe recall involves presenting an agent with a large set of randomly selected
 During each episode, the agent is provided with 6 random ingredients to work with (the number of ingredients is modifiable). The objective is for the agent to identify and select the ingredients corresponding to a specific recipe. If the agent successfully touches the ingredients that match a recipe, it is rewarded with the tastiness value associated with that recipe. However, if the agent fails to select the correct ingredients, it receives no reward for that  episode. In order to achieve a high reward, the agent must demonstrate the ability to remember multiple recipes, potentially spanning across different episodes or sessions. This task serves as a means to test the agent's factual (semantic) memory as it learns what recipes are, specifically its capacity to retain and recall discrete facts accurately. 
 
 ## Matching Pairs
-- screenshots
-- videos
+
+https://github.com/AndreiMuresanu/memory_bench/assets/44536960/76cf8943-b73b-4560-bfed-8a35162c2cee
 
 In the matching pairs task, there are two pairs of objects scattered randomly around a room (the number of pairs of objects is modifiable). Each pair of objects has the same appearance, but their positions are random. The goal of the agent is to touch one object from a pair and then touch its corresponding pair without touching any other objects in between, and then repeat that for the other pair.
 
@@ -62,8 +62,8 @@ If the agent successfully touches a pair of objects without any intervening touc
 The task tests an agent's ability to make associations (episodic memory) and learn the relationship between seemingly unrelated items. Upon touching the first block, the agent needs to encode and store its identity in memory. It must then explore the room while remembering the initial block it touched until it can associate the block to its matching pair. We also implement this task in a partially-observable mode, where the agent has a far more restricted field of view. This makes the task harder, as the  agent is forced to retain an object in its memory until it sees a pair, whereas the task is easier if the agent has a larger field of view and can see multiple objects at the same time. This might be similar to a situation where a robot in a house must learn to make associations between objects and interact with them in an implicit order.
 
 ## Hallway
-- screenshots
-- videos
+
+https://github.com/AndreiMuresanu/memory_bench/assets/44536960/f3217387-99ed-44b3-8d29-206133f97679
 
 In this task, the agent is initially presented with a goal token, represented by a yellow O or a blue X, concealed behind a wall. The agent's objective is to traverse down a hallway, no longer seeing the goal token, and touch a door that corresponds to the matching token. The location of the goal token is randomized across episodes, which tests the agent's episodic memory, as it needs to remember the explicit symbols observed during its lifetime. The agent must recall and track the changing location of the goal token. The agent receives a negative reward of -0.1 for each step taken in the environment to minimize unnecessary movements. Additionally, a penalty of -0.1 is imposed if the agent touches the door with the incorrect token. If the agent successfully touches the correct target, it receives a reward of +5.
 
