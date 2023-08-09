@@ -1,4 +1,4 @@
-Task Configuration Parameters
+Configuration Parameters
 ===
 
 # General Environment Parameters
