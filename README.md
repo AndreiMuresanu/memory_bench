@@ -1,4 +1,5 @@
-# ReMEMber: Assessing Memory Capabilities of RL Agents
+ReMEMber: Assessing Memory Capabilities of RL Agents
+===
 Andrei Muresanu*, Marta Skreta*, Kourosh Darvish, Alán Aspuru-Guzik, Animesh Garg
 
 ArXiv | [Colab](https://colab.research.google.com/drive/1E3TPO9z1cOH1p63lvwxeWon40xn5Ekvc?usp=sharing)
@@ -106,6 +107,16 @@ In this task, the agent is initially presented with a goal token, represented by
 ## Parallelism Modes
 
 ## Virtual Display
+
+## Linux vs Windows
+- show which files are necessary for each
+
+## Build File Structure
+
+Build files are organized using the following structure:
+```python
+Builds/task/platform/variant/input_modality/parallelization_type
+```
 
 # Additional Documentation
 - link useful docs
