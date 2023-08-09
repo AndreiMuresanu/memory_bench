@@ -118,6 +118,10 @@ Build files are organized using the following structure:
 Builds/task/variant/platform/input_modality/parallelization_type
 ```
 
+## Configuration Parameters
+
+See the Configuration Parameters doc [here](https://github.com/AndreiMuresanu/memory_bench/blob/master/Configuration_Parameters.md)
+
 # Additional Documentation
 - link useful docs
 
