@@ -115,7 +115,7 @@ In this task, the agent is initially presented with a goal token, represented by
 
 Build files are organized using the following structure:
 ```python
-Builds/task/platform/variant/input_modality/parallelization_type
+Builds/task/variant/platform/input_modality/parallelization_type
 ```
 
 # Additional Documentation
