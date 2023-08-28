@@ -375,33 +375,27 @@ class MyCallback(BaseCallback):
 
 	def __init__(self, verbose=2):
 		super().__init__(verbose)
-		self.partial_cum_rewards = np.zeros(24)
+		self.rollout_partial_cum_batch_reward = np.zeros(24)
 
 	def _on_rollout_end(self) -> None:
 		print('+++++++++++++++++++++++++++++++++++')
 		print('ROLLOUT')
 		print('+++++++++++++++++++++++++++++++++++')
 		print('self.num_timesteps:', self.num_timesteps)
+		print('self.rollout_partial_cum_batch_reward:', self.rollout_partial_cum_batch_reward)
 
-		mean_batch_reward = 0
-		for cum_reward in self.partial_cum_rewards:
-			mean_batch_reward += cum_reward
-		mean_batch_reward /= (self.num_timesteps / 24)
-		self.logger.record("rollout/mean_batch_reward", mean_batch_reward)
+		avg_cum_batch_reward = 0
+		for cum_reward in self.rollout_partial_cum_batch_reward:
+			avg_cum_batch_reward += cum_reward
+		avg_cum_batch_reward /= 24
+		self.logger.record("rollout/avg_cum_batch_reward", avg_cum_batch_reward)
+		self.rollout_partial_cum_batch_reward = np.zeros(24)	# reset for the next rollout
 	
 	def _on_step(self) -> bool:
-		# Log scalar value (here a random variable)
-		#value = np.random.random()
-		#self.logger.record("random_value", value)
-		
-		#print('type(self.locals):', type(self.locals))
-		#print('self.locals["rewards"]:', self.locals["rewards"])
-
-		#print(self.num_timesteps)
-		self.partial_cum_rewards += self.locals['rewards']
-		
+		self.rollout_partial_cum_batch_reward += self.locals['rewards']
+				
 		avg_cum_batch_reward = 0
-		for cum_reward in self.partial_cum_rewards:
+		for cum_reward in self.rollout_partial_cum_batch_reward:
 			avg_cum_batch_reward += cum_reward
 		avg_cum_batch_reward /= 24
 		self.logger.record("train/avg_cum_batch_reward", avg_cum_batch_reward)
