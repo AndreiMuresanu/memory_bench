@@ -32,6 +32,8 @@ UnityParallelEnv.reset = monkey_UnityParallelEnv_reset
 import stable_baselines3
 stable_baselines3.common.vec_env.base_vec_env.VecEnvWrapper.get_attr = monkey_VecEnvWrapper_get_attr
 
+# MONKEY PATCH END, I THINK ORDER OF IMPORTS MATTERS?
+
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecMonitor
 from stable_baselines3.common.callbacks import BaseCallback
@@ -44,7 +46,6 @@ from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import PPO, SAC, TD3, A2C, DQN
 from sb3_contrib import RecurrentPPO
 
-# MONKEY PATCH END, I THINK ORDER OF IMPORTS MATTERS?
 
 
 PROJECT_DIR_PATH = '/h/andrei/memory_bench'
