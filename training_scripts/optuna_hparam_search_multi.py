@@ -63,8 +63,8 @@ import statistics
 #PROJECT_DIR_PATH = '/h/mskrt/memory_bench'
 PROJECT_DIR_PATH = '/h/andrei/memory_bench'
 
-N_TRIALS = 40
-SEED_OFFSET = 0
+#N_TRIALS = 40
+#SEED_OFFSET = 0
 #N_EVALUATIONS = 50
 #N_TIMESTEPS = int(200_000)
 N_TIMESTEPS = int(20)
@@ -80,6 +80,12 @@ print("ALGO NAME................", algo_name)
 
 worker_id = int(sys.argv[3])
 print("worker_id................", worker_id)
+
+SEED_OFFSET = int(sys.argv[4])
+print("SEED_OFFSET................", SEED_OFFSET)
+
+N_TRIALS = int(sys.argv[5])
+print("N_TRIALS................", N_TRIALS)
 
 task_names = [
 	'AllergicRobot',
@@ -114,12 +120,13 @@ wandbc = WeightsAndBiasesCallback(wandb_kwargs=wandb_kwargs, as_multirun=True)
 
 base_config = {
 	"policy_type": "CnnPolicy",
-	#"parallelism": "single_agent",
-	"parallelism": "multi_agent",
+	"parallelism": "single_agent",
+	#"parallelism": "multi_agent",
 	
 	"total_timesteps": N_TIMESTEPS,
 	'N_TRIALS': N_TRIALS,
 	'SEED_OFFSET': SEED_OFFSET,
+	'worker_id': worker_id,
 
 	'env_name': task_name,
 	'algo_name': algo_name,
@@ -136,6 +143,7 @@ class Past_1k_Steps_Callback(BaseCallback):
 		self.past_1k_steps_cum_batch_reward = np.zeros(24)
 		self.last_log_at_step = 0
 		self.trial = trial
+		self.is_pruned = False
 
 	def _on_step(self) -> bool:
 		self.past_1k_steps_cum_batch_reward += self.locals['rewards']
@@ -155,7 +163,8 @@ class Past_1k_Steps_Callback(BaseCallback):
 			self.last_log_at_step = self.num_timesteps
 		
 		# Prune trial if need.
-		if self.trial.should_prune():
+		if self.trial and self.trial.should_prune():
+			self.is_pruned = True
 			return False	
 		else:
 			return True
@@ -175,6 +184,7 @@ class Per_Episode_Callback(BaseCallback):
 		self.rollout_partial_cum_batch_reward = np.zeros(24)
 		self.last_ep_time_step = 0
 		self.episodes_seen = 0
+		self.is_pruned = False
 
 	def _on_step(self) -> bool:
 		self.rollout_partial_cum_batch_reward += self.locals['rewards']
@@ -203,6 +213,7 @@ class Per_Episode_Callback(BaseCallback):
 		
 		# Prune trial if need.
 		if self.trial.should_prune():
+			self.is_pruned = True
 			return False	
 		else:
 			return True
@@ -253,22 +264,38 @@ def objective(trial: optuna.Trial) -> float:
 	model = algo(**kwargs)
 	nan_encountered = False
 	try:
+		
+		if config['env_name'] == 'Hallway':
+			train_callback = Past_1k_Steps_Callback(trial)
+		else:
+			# Doesn't work with Hallway
+			train_callback = Per_Episode_Callback(trial, get_episode_length(config['env_name']))
+
 		model.learn(
 			total_timesteps=config["total_timesteps"],
-			callback=Past_1k_Steps_Callback(trial),
+			callback=train_callback,
 			progress_bar=True
 		)
+		
+		if train_callback.is_pruned:
+			raise optuna.exceptions.TrialPruned()
 
 		if config['parallelism'] == 'single_agent':
-			eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=Past_1k_Steps_Callback(trial))
+			#my_eval_callback = Past_1k_Steps_Callback
+			#eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback)
+			eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True)
 		
 		elif config['parallelism'] == 'multi_agent':
 			
-			eval_ep_reward_means = []	
-			eval_callback = Per_Episode_Callback(trial, get_episode_length(config['env_name']), episode_batch_limit=1)
+			global EVAL_EP_REWARD_MEANS
+			EVAL_EP_REWARD_MEANS = []
+
+			my_eval_callback = Per_Episode_Callback(trial, get_episode_length(config['env_name']), episode_batch_limit=1)
 			#eval_callback = Per_Episode_Callback(trial, get_episode_length(config['env_name']), episode_batch_limit=1, result_container=eval_ep_reward_means)
-			_, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=eval_callback)
+			_, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback)
 		
+			eval_ep_reward_means = EVAL_EP_REWARD_MEANS
+
 		else:
 			raise ValueError(f"Invalid parallelism: {config['parallelism']}")
 
@@ -294,12 +321,10 @@ def objective(trial: optuna.Trial) -> float:
 		#model.env.close()
 		env.close()
 		#run.finish()
+	
 	# Tell the optimizer that the trial failed.
 	if nan_encountered:
 		return float("nan")
-	
-	if eval_callback.is_pruned:
-		raise optuna.exceptions.TrialPruned()
 	
 	#return eval_callback.last_mean_reward
 	return eval_ep_reward_means_mean

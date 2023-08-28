@@ -64,10 +64,15 @@ def create_unity_env(config):
 	# Setting Task Parameters
 	#setup_channel.set_float_parameter("max_ingredient_count", -1)
 
-	# select the multi-agent executable
-	return UnityEnvironment(get_env_path(config),
-							seed=config['seed'],
-							side_channels=[setup_channel, config_channel])
+	# Select the multi-agent executable
+	kwargs = {
+		'seed': config['seed'],
+		'side_channels': [setup_channel, config_channel],
+	}
+	if config['worker_id']: kwargs['worker_id'] = config['worker_id']
+	
+	return UnityEnvironment(get_env_path(config), **kwargs)
+		
 
 
 def make_env(config):
