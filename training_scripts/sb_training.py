@@ -15,7 +15,6 @@ from copy import deepcopy
 from tqdm import tqdm
 import traceback
 
-
 # MONKEY PATCH START, I THINK ORDER OF IMPORTS MATTERS?
 
 from monkey_patches import monkey_UnityParallelEnv_reset, monkey_VecEnvWrapper_get_attr, monkey_SS_concat_obs
@@ -37,6 +36,7 @@ stable_baselines3.common.vec_env.base_vec_env.VecEnvWrapper.get_attr = monkey_Ve
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecMonitor
 from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.evaluation import evaluate_policy
 
 import supersuit as ss
 
@@ -45,7 +45,7 @@ from stable_baselines3.common.env_checker import check_env
 
 from stable_baselines3 import PPO, SAC, TD3, A2C, DQN
 from sb3_contrib import RecurrentPPO
-
+import statistics
 
 
 PROJECT_DIR_PATH = '/h/andrei/memory_bench'
@@ -100,6 +100,8 @@ def make_env(config):
 		raise ValueError()
 
 
+'''
+# idk y but self.locals['dones'] is always false
 class MyCallback(BaseCallback):
 	"""
 	Custom callback for plotting additional values in tensorboard.
@@ -109,14 +111,6 @@ class MyCallback(BaseCallback):
 		super().__init__(verbose)
 		self.rollout_partial_cum_batch_reward = np.zeros(24)
 
-	def _on_rollout_end(self) -> None:
-		avg_cum_batch_reward = 0
-		for cum_reward in self.rollout_partial_cum_batch_reward:
-			avg_cum_batch_reward += cum_reward
-		avg_cum_batch_reward /= 24
-		self.logger.record("rollout/avg_cum_batch_reward", avg_cum_batch_reward)
-		self.rollout_partial_cum_batch_reward = np.zeros(24)	# reset for the next rollout
-	
 	def _on_step(self) -> bool:
 		self.rollout_partial_cum_batch_reward += self.locals['rewards']
 				
@@ -125,7 +119,48 @@ class MyCallback(BaseCallback):
 			avg_cum_batch_reward += cum_reward
 		avg_cum_batch_reward /= 24
 		self.logger.record("train/avg_cum_batch_reward", avg_cum_batch_reward)
+		
+		if all(self.locals['dones']):
+			print('Episode Complete')
+			print('self.num_timesteps:', self.num_timesteps)
+			print('self.num_timesteps / 24:', self.num_timesteps / 24)
+			print('avg_cum_batch_reward:', avg_cum_batch_reward)
 
+			# The current episode is over
+			self.logger.record("episode/avg_cum_batch_reward", avg_cum_batch_reward)
+			self.rollout_partial_cum_batch_reward = np.zeros(24)	# reset for the next rollout
+
+		elif any(self.locals['dones']):
+			raise Exception('Black Death is likely not activated. Use SuperSuit Black Death wrapper.')
+		
+		return True
+#'''
+
+
+class MyCallback(BaseCallback):
+	"""
+	Custom callback for plotting additional values in tensorboard.
+	"""
+
+	def __init__(self, verbose=2):
+		super().__init__(verbose)
+		self.past_1k_steps_cum_batch_reward = np.zeros(24)
+		self.last_log_at_step = 0
+
+	def _on_step(self) -> bool:
+		self.past_1k_steps_cum_batch_reward += self.locals['rewards']
+				
+		avg_cum_batch_reward = 0
+		for cum_reward in self.past_1k_steps_cum_batch_reward:
+			avg_cum_batch_reward += cum_reward
+		avg_cum_batch_reward /= 24
+		
+		if self.num_timesteps - self.last_log_at_step >= 1000:
+			self.logger.record("train/past_1k_steps_cum_batch_reward", avg_cum_batch_reward)
+			self.logger.record("train/cur_step_rewards", self.locals['rewards'])
+			self.past_1k_steps_cum_batch_reward = np.zeros(24)	# reset for the next rollout
+			self.last_log_at_step = self.num_timesteps
+		
 		return True
 
 
@@ -145,14 +180,28 @@ def sb_training(config):
 	model = algo(config["policy_type"], env, verbose=config['verbosity'], tensorboard_log=f"runs/{run.id}")
 	model.learn(
 		total_timesteps=config["total_timesteps"],
-		#callback=WandbCallback(
-		#	gradient_save_freq=100,
-		#	model_save_path=f"models/{run.id}",
-		#	verbose=config['verbosity'],
-		#),
-		callback=MyCallback(),
+		callback=WandbCallback(
+			gradient_save_freq=100,
+			model_save_path=f"models/{run.id}",
+			verbose=config['verbosity'],
+		),
+		#callback=MyCallback(),
 		progress_bar=True
 	)
+
+	eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True)
+	
+	eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
+	eval_ep_reward_means_std = statistics.stdev(eval_ep_reward_means)
+	print('eval_ep_reward_means:', eval_ep_reward_means)
+	print('eval_ep_reward_means_mean:', eval_ep_reward_means_mean)
+	print('eval_ep_reward_means_std:', eval_ep_reward_means_std)
+
+	wandb.log({
+		'eval_ep_reward_means': eval_ep_reward_means,
+		'eval_ep_reward_means_mean': eval_ep_reward_means_mean,
+		'eval_ep_reward_means_std': eval_ep_reward_means_std,
+	})
 
 	#print("Saving model to sb_model.pkl")
 	#model.save("./models/sb_test_model.pkl")
@@ -183,13 +232,22 @@ def get_algo(algo_name):
 	return algos[algo_name]
 
 
+def get_episode_length(task_name):
+	ep_lens = {
+		'AllergicRobot': 2048,
+		'MatchingPairs': 2048,
+		'RecipeRecall': 2048,
+	}
+	return ep_lens[task_name]
+
+
 if __name__ == '__main__':
 
 	task_names = [
 		'AllergicRobot',
-		#'MatchingPairs',
+		'MatchingPairs',
 		#'Hallway',
-		#'RecipeRecall'
+		'RecipeRecall'
 	]
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
@@ -207,22 +265,22 @@ if __name__ == '__main__':
 	base_config = {
 		"policy_type": "CnnPolicy",
 		#"total_timesteps": 250_000,
-		#"total_timesteps": 3,
-		"total_timesteps": 100_000,
-		#"parallelism": "single_agent",
-		"parallelism": "multi_agent",
+		"total_timesteps": 10_000,
+		#"total_timesteps": 100_000,
+		"parallelism": "single_agent",
+		#"parallelism": "multi_agent",
 		#"verbosity": 0,
 		"verbosity": 2,
 	}
 
 	for task_name in tqdm(task_names, desc='tasks completed'):
 		for algo_name in tqdm(algo_names, desc='algos completed'):
-			for trail_num in tqdm(range(num_of_trial_repeats), desc='trails completed'):
+			for trial_num in tqdm(range(num_of_trial_repeats), desc='trials completed'):
 				config = deepcopy(base_config)	# I think deepcopy is likely not needed
 				config['env_name'] = task_name
 				config['algo_name'] = algo_name
-				config['trail_num'] = trail_num
-				config['seed'] = trail_num
+				config['trial_num'] = trial_num
+				config['seed'] = trial_num
 
 				# convert all this sloppy code into a factory
 				if algo_name == 'RecurrentPPO':
