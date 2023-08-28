@@ -378,12 +378,6 @@ class MyCallback(BaseCallback):
 		self.rollout_partial_cum_batch_reward = np.zeros(24)
 
 	def _on_rollout_end(self) -> None:
-		print('+++++++++++++++++++++++++++++++++++')
-		print('ROLLOUT')
-		print('+++++++++++++++++++++++++++++++++++')
-		print('self.num_timesteps:', self.num_timesteps)
-		print('self.rollout_partial_cum_batch_reward:', self.rollout_partial_cum_batch_reward)
-
 		avg_cum_batch_reward = 0
 		for cum_reward in self.rollout_partial_cum_batch_reward:
 			avg_cum_batch_reward += cum_reward
