@@ -58,6 +58,7 @@ from tqdm import tqdm
 from sb_training import make_env, get_episode_length
 from rl_zoo_samplers import sample_ppo_params, sample_rppo_params, sample_a2c_params, sample_dqn_params
 import statistics
+from nasty_evaluate_policy import nasty_evaluate_policy
 
 
 #PROJECT_DIR_PATH = '/h/mskrt/memory_bench'
@@ -66,8 +67,8 @@ PROJECT_DIR_PATH = '/h/andrei/memory_bench'
 #N_TRIALS = 40
 #SEED_OFFSET = 0
 #N_EVALUATIONS = 50
-#N_TIMESTEPS = int(200_000)
-N_TIMESTEPS = int(20)
+N_TIMESTEPS = int(200_000)
+#N_TIMESTEPS = int(20)
 #EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
 
 # convert all this sloppy code into a factory
@@ -120,7 +121,7 @@ wandbc = WeightsAndBiasesCallback(wandb_kwargs=wandb_kwargs, as_multirun=True)
 
 base_config = {
 	"policy_type": "CnnPolicy",
-	"parallelism": "single_agent",
+	#"parallelism": "single_agent",
 	#"parallelism": "multi_agent",
 	
 	"total_timesteps": N_TIMESTEPS,
@@ -131,6 +132,11 @@ base_config = {
 	'env_name': task_name,
 	'algo_name': algo_name,
 }
+
+if task_name == 'Hallway':
+	base_config['parallelism'] = 'single_agent'
+else:
+	base_config['parallelism'] = 'multi_agent'
 
 
 
@@ -170,25 +176,22 @@ class Past_1k_Steps_Callback(BaseCallback):
 			return True
 
 
-class Per_Episode_Callback(BaseCallback):
+class TRAIN_Per_Episode_Callback(BaseCallback):
 	"""
 	Custom callback for plotting additional values in tensorboard.
 	"""
 
-	def __init__(self, trial: optuna.Trial, episode_length=None, episode_batch_limit=None, result_container=None, verbose=2):
+	def __init__(self, trial: optuna.Trial, episode_length, verbose=2):
 		super().__init__(verbose)
 		self.trial = trial
 		self.episode_length = episode_length
-		self.episode_batch_limit = episode_batch_limit
-		self.result_container = result_container
 		self.rollout_partial_cum_batch_reward = np.zeros(24)
 		self.last_ep_time_step = 0
-		self.episodes_seen = 0
 		self.is_pruned = False
 
 	def _on_step(self) -> bool:
 		self.rollout_partial_cum_batch_reward += self.locals['rewards']
-				
+		
 		avg_cum_batch_reward = 0
 		for cum_reward in self.rollout_partial_cum_batch_reward:
 			avg_cum_batch_reward += cum_reward
@@ -202,8 +205,148 @@ class Per_Episode_Callback(BaseCallback):
 			print('avg_cum_batch_reward:', avg_cum_batch_reward)
 
 			# The current episode is over
+			self.logger.record("episode/avg_cum_batch_reward", avg_cum_batch_reward)
+			self.rollout_partial_cum_batch_reward = np.zeros(24)	# reset for the next rollout
+
+			self.last_ep_time_step = self.num_timesteps
+		
+		# Prune trial if need.
+		if self.trial.should_prune():
+			self.is_pruned = True
+			return False	
+		else:
+			return True
+
+
+class EVAL_Per_Episode_Callback(BaseCallback):
+	"""
+	Custom callback for plotting additional values in tensorboard.
+	"""
+
+	def __init__(self, trial: optuna.Trial, episode_length, episode_batch_limit, result_container, verbose=2):
+		super().__init__(verbose)
+		self.trial = trial
+		self.episode_length = episode_length
+		self.episode_batch_limit = episode_batch_limit
+		self.result_container = result_container
+
+		self.rollout_partial_cum_batch_reward = np.zeros(24)
+		self.last_ep_time_step = 0
+		self.episodes_seen = 0
+		self.is_pruned = False
+		self.num_of_steps = 0
+
+	def _on_step(self, locals, globals) -> bool:
+		def end_task(locals):
+			print('ENDING EPISODE')
+			locals['dones'] = np.ones(24)
+			locals['episode_counts'] = np.repeat(self.episode_batch_limit, 24)
+			locals['episode_count_targets'] = np.repeat(self.episode_batch_limit, 24)
+
+		self.num_of_steps += 24
+		self.rollout_partial_cum_batch_reward += locals['rewards']
+
+		#print('self.num_of_steps:', self.num_of_steps)
+		#print('self.last_ep_time_step:', self.last_ep_time_step)
+		#print('self.episode_length:', self.episode_length)
+		#print('statistics.mean(self.rollout_partial_cum_batch_reward):', statistics.mean(self.rollout_partial_cum_batch_reward))
+		#print('self.episodes_seen:', self.episodes_seen)
+
+		avg_cum_batch_reward = 0
+		for cum_reward in self.rollout_partial_cum_batch_reward:
+			avg_cum_batch_reward += cum_reward
+		avg_cum_batch_reward /= 24
+		
+		if self.num_of_steps - self.last_ep_time_step >= self.episode_length:
+			print('\nEpisode Complete')
+			print('self.num_of_steps:', self.num_of_steps)
+			print('self.episode_batch_limit:', self.episode_batch_limit)
+			print('avg_cum_batch_reward:', avg_cum_batch_reward)
+			print('locals["dones"]:', locals["dones"])
+
+			# The current episode is over
+			self.rollout_partial_cum_batch_reward = np.zeros(24)	# reset for the next rollout
+			self.episodes_seen += 1
+			if self.episodes_seen >= self.episode_batch_limit:
+				end_task(locals)
+
+			self.last_ep_time_step = self.num_of_steps
+		
+		# prune trial if need.
+		if self.trial.should_prune():
+			self.is_pruned = True
+			end_task(locals)
+		else:
+			pass
+
+
+'''
+class stupid_per_episode_callback(basecallback):
+	"""
+	custom callback for plotting additional values in tensorboard.
+	"""
+
+	def __init__(self, trial: optuna.trial, episode_length=none, episode_batch_limit=none, result_container=none, verbose=2):
+		super().__init__(verbose)
+		self.trial = trial
+		self.episode_length = episode_length
+		self.episode_batch_limit = episode_batch_limit
+		self.result_container = result_container
+		
+		if self.result_container is none:
+			self.result_container = []
+		
+		if 'eval_callback_params' in globals():
+			if 'episode_length' in eval_callback_params:
+				self.episode_length = eval_callback_params['episode_length']
+			if 'episode_batch_limit' in eval_callback_params:
+				self.episode_batch_limit = eval_callback_params['episode_batch_limit']
+			if 'result_container' in eval_callback_params:
+				self.result_container = eval_callback_params['result_container']
+
+		print('self.episode_length:', self.episode_length)
+		print('self.episode_batch_limit:', self.episode_batch_limit)
+		print('self.result_container:', self.result_container)
+
+		self.rollout_partial_cum_batch_reward = np.zeros(24)
+		self.last_ep_time_step = 0
+		self.episodes_seen = 0
+		self.is_pruned = false
+		self.num_of_steps = 0
+
+	def _on_step(self, locals=none, globals=none) -> bool:
+		self.num_of_steps += 24
+		if self.num_timesteps < self.num_of_steps:
+			self.num_timesteps = self.num_of_steps
+
+		if locals is not none:
+			self.locals = locals
+		if globals is not None:
+			self.globals = globals
+
+		#print('locals:', locals)
+		#print('globals:', globals)
+
+		print('self.num_of_steps:', self.num_of_steps)
+		print('self.num_timesteps:', self.num_timesteps)
+
+		self.rollout_partial_cum_batch_reward += self.locals['rewards']
+		
+		avg_cum_batch_reward = 0
+		for cum_reward in self.rollout_partial_cum_batch_reward:
+			avg_cum_batch_reward += cum_reward
+		avg_cum_batch_reward /= 24
+		#self.logger.record("train/avg_cum_batch_reward", avg_cum_batch_reward)
+		
+		if self.num_timesteps - self.last_ep_time_step >= self.episode_length:
+			print('Episode Complete')
+			print('self.num_timesteps:', self.num_timesteps)
+			print('self.num_timesteps / 24:', self.num_timesteps / 24)
+			print('avg_cum_batch_reward:', avg_cum_batch_reward)
+
+			# The current episode is over
 			#self.logger.record("episode/avg_cum_batch_reward", avg_cum_batch_reward)
-			if self.result_container: self.result_container.append(avg_cum_batch_reward)
+			self.result_container.append(avg_cum_batch_reward)
 			self.rollout_partial_cum_batch_reward = np.zeros(24)	# reset for the next rollout
 			self.episodes_seen += 1
 			if self.episode_batch_limit and self.episodes_seen >= self.episode_batch_limit:
@@ -217,6 +360,7 @@ class Per_Episode_Callback(BaseCallback):
 			return False	
 		else:
 			return True
+#'''
 
 
 #def sb_training(config):
@@ -269,7 +413,7 @@ def objective(trial: optuna.Trial) -> float:
 			train_callback = Past_1k_Steps_Callback(trial)
 		else:
 			# Doesn't work with Hallway
-			train_callback = Per_Episode_Callback(trial, get_episode_length(config['env_name']))
+			train_callback = TRAIN_Per_Episode_Callback(trial, get_episode_length(config['env_name']))
 
 		model.learn(
 			total_timesteps=config["total_timesteps"],
@@ -287,21 +431,39 @@ def objective(trial: optuna.Trial) -> float:
 		
 		elif config['parallelism'] == 'multi_agent':
 			
-			global EVAL_EP_REWARD_MEANS
-			EVAL_EP_REWARD_MEANS = []
+			'''
+			global EVAL_CALLBACK_PARAMS
+			EVAL_CALLBACK_PARAMS = {
+				'trial': trial,
+				'episode_length': get_episode_length(config['env_name']),
+				'result_container': [],
+				'episode_batch_limit': 1
+			}
 
-			my_eval_callback = Per_Episode_Callback(trial, get_episode_length(config['env_name']), episode_batch_limit=1)
-			#eval_callback = Per_Episode_Callback(trial, get_episode_length(config['env_name']), episode_batch_limit=1, result_container=eval_ep_reward_means)
-			_, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback)
+			my_eval_callback = Per_Episode_Callback(trial)
+			#my_eval_callback = Per_Episode_Callback(trial, get_episode_length(config['env_name']), episode_batch_limit=1, result_container=eval_ep_reward_means)
+			
+			_, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback._on_step)
 		
-			eval_ep_reward_means = EVAL_EP_REWARD_MEANS
+			eval_ep_reward_means = EVAL_CALLBACK_PARAMS['eval_ep_reward_means']
+			EVAL_CALLBACK_PARAMS = {}
+			#'''
+
+			'''
+			eval_ep_reward_means = []
+			my_eval_callback = EVAL_Per_Episode_Callback(trial, get_episode_length(config['env_name']), episode_batch_limit=1, result_container=eval_ep_reward_means)
+			
+			_, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback._on_step)
+			#'''
+			
+			eval_ep_reward_means = nasty_evaluate_policy(model, env, nasty_episode_length=get_episode_length(config['env_name']), episode_batch_limit=1)
 
 		else:
 			raise ValueError(f"Invalid parallelism: {config['parallelism']}")
 
+		print('eval_ep_reward_means:', eval_ep_reward_means)
 		eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
 		eval_ep_reward_means_std = statistics.stdev(eval_ep_reward_means)
-		print('eval_ep_reward_means:', eval_ep_reward_means)
 		print('eval_ep_reward_means_mean:', eval_ep_reward_means_mean)
 		print('eval_ep_reward_means_std:', eval_ep_reward_means_std)
 
