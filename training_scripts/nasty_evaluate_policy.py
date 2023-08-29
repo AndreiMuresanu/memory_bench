@@ -6,12 +6,12 @@ import numpy as np
 
 from stable_baselines3.common import type_aliases
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecMonitor, is_vecenv_wrapped
-
+import wandb
 
 def nasty_evaluate_policy(
     model: "type_aliases.PolicyPredictor",
     env: Union[gym.Env, VecEnv],
-    nasty_episode_length,
+    episode_length,
     episode_batch_limit,
     n_eval_episodes: int = 10,
     deterministic: bool = True,
@@ -94,17 +94,25 @@ def nasty_evaluate_policy(
         )
         new_observations, rewards, dones, infos = env.step(actions)
         current_rewards += rewards
+        num_of_steps += 1
+        
+        print('num_of_steps:', num_of_steps)
+        print('episode_count:', episode_count)
 
-        num_of_steps += 24
-        if num_of_steps - last_ep_step >= nasty_episode_length:
+        if num_of_steps - last_ep_step >= episode_length:
             # new episode reached
+            print('EPISODE COMPLETE')
+
             # add to logging
             episode_count += 1
             last_ep_step = num_of_steps
 
             ep_rewards = [cum_rew for cum_rew in current_rewards]           
             episode_rewards += ep_rewards
+
             # reset counter variables
             current_rewards = np.zeros(n_envs)
+
+            print('episode_count:', episode_count)
 
     return episode_rewards 

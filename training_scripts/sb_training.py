@@ -69,7 +69,7 @@ def create_unity_env(config):
 		'seed': config['seed'],
 		'side_channels': [setup_channel, config_channel],
 	}
-	if config['worker_id']: kwargs['worker_id'] = config['worker_id']
+	if 'worker_id' in config: kwargs['worker_id'] = config['worker_id']
 	
 	return UnityEnvironment(get_env_path(config), **kwargs)
 		
@@ -239,9 +239,10 @@ def get_algo(algo_name):
 
 def get_episode_length(task_name):
 	ep_lens = {
-		'AllergicRobot': 2048,
-		'MatchingPairs': 2048,
-		'RecipeRecall': 2048,
+		'AllergicRobot': 60,	#60 steps for each of our 24 agents
+		'MatchingPairs': 300,
+		'RecipeRecall': 80,
+		#Hallway has a time limit of 500 steps
 	}
 	return ep_lens[task_name]
 
@@ -250,9 +251,9 @@ if __name__ == '__main__':
 
 	task_names = [
 		'AllergicRobot',
-		'MatchingPairs',
+		#'MatchingPairs',
 		#'Hallway',
-		'RecipeRecall'
+		#'RecipeRecall'
 	]
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
@@ -272,8 +273,8 @@ if __name__ == '__main__':
 		#"total_timesteps": 250_000,
 		"total_timesteps": 10_000,
 		#"total_timesteps": 100_000,
-		"parallelism": "single_agent",
-		#"parallelism": "multi_agent",
+		#"parallelism": "single_agent",
+		"parallelism": "multi_agent",
 		#"verbosity": 0,
 		"verbosity": 2,
 	}

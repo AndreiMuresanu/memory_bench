@@ -67,8 +67,8 @@ PROJECT_DIR_PATH = '/h/andrei/memory_bench'
 #N_TRIALS = 40
 #SEED_OFFSET = 0
 #N_EVALUATIONS = 50
-N_TIMESTEPS = int(200_000)
-#N_TIMESTEPS = int(20)
+#N_TIMESTEPS = int(200_000)
+N_TIMESTEPS = int(15000)
 #EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
 
 # convert all this sloppy code into a factory
@@ -112,7 +112,7 @@ wandb_kwargs = {
 		"entity": "team-andrei",
 		"sync_tensorboard":True,  # auto-upload sb3's tensorboard metrics
 		#"monitor_gym":True,  # auto-upload the videos of agents playing the game
-		"save_code":True,  # optional
+		#"save_code":True,  # optional
 		#"name": "{}_{}_200k-steps".format(task_name, algo_name),
 		#'mode': 'disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	}
@@ -197,8 +197,10 @@ class TRAIN_Per_Episode_Callback(BaseCallback):
 			avg_cum_batch_reward += cum_reward
 		avg_cum_batch_reward /= 24
 		self.logger.record("train/avg_cum_batch_reward", avg_cum_batch_reward)
+		wandb.log({"train/avg_cum_batch_reward": avg_cum_batch_reward})
 		
-		if self.num_timesteps - self.last_ep_time_step >= self.episode_length:
+		# we divide by 24 because self.num_timesteps is the total number of steps taken by all agents
+		if (self.num_timesteps - self.last_ep_time_step) / 24 >= self.episode_length:
 			print('Episode Complete')
 			print('self.num_timesteps:', self.num_timesteps)
 			print('self.num_timesteps / 24:', self.num_timesteps / 24)
@@ -206,6 +208,7 @@ class TRAIN_Per_Episode_Callback(BaseCallback):
 
 			# The current episode is over
 			self.logger.record("episode/avg_cum_batch_reward", avg_cum_batch_reward)
+			wandb.log({"episode/avg_cum_batch_reward": avg_cum_batch_reward})
 			self.rollout_partial_cum_batch_reward = np.zeros(24)	# reset for the next rollout
 
 			self.last_ep_time_step = self.num_timesteps
@@ -217,7 +220,7 @@ class TRAIN_Per_Episode_Callback(BaseCallback):
 		else:
 			return True
 
-
+'''
 class EVAL_Per_Episode_Callback(BaseCallback):
 	"""
 	Custom callback for plotting additional values in tensorboard.
@@ -278,7 +281,7 @@ class EVAL_Per_Episode_Callback(BaseCallback):
 			end_task(locals)
 		else:
 			pass
-
+#'''
 
 '''
 class stupid_per_episode_callback(basecallback):
@@ -409,11 +412,12 @@ def objective(trial: optuna.Trial) -> float:
 	nan_encountered = False
 	try:
 		
-		if config['env_name'] == 'Hallway':
+		if config['parallelism'] == 'single_agent':
 			train_callback = Past_1k_Steps_Callback(trial)
-		else:
-			# Doesn't work with Hallway
+		elif config['parallelism'] == 'multi_agent':
 			train_callback = TRAIN_Per_Episode_Callback(trial, get_episode_length(config['env_name']))
+		else:
+			raise ValueError(f'Invalid parallelism: {config["parallelism"]}')
 
 		model.learn(
 			total_timesteps=config["total_timesteps"],
@@ -456,7 +460,7 @@ def objective(trial: optuna.Trial) -> float:
 			_, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback._on_step)
 			#'''
 			
-			eval_ep_reward_means = nasty_evaluate_policy(model, env, nasty_episode_length=get_episode_length(config['env_name']), episode_batch_limit=1)
+			eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=get_episode_length(config['env_name']), episode_batch_limit=1)
 
 		else:
 			raise ValueError(f"Invalid parallelism: {config['parallelism']}")
