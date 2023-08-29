@@ -96,13 +96,8 @@ def nasty_evaluate_policy(
         current_rewards += rewards
         num_of_steps += 1
         
-        print('num_of_steps:', num_of_steps)
-        print('episode_count:', episode_count)
-
         if num_of_steps - last_ep_step >= episode_length:
             # new episode reached
-            print('EPISODE COMPLETE')
-
             # add to logging
             episode_count += 1
             last_ep_step = num_of_steps
