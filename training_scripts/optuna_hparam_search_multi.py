@@ -68,7 +68,7 @@ PROJECT_DIR_PATH = '/h/andrei/memory_bench'
 #SEED_OFFSET = 0
 #N_EVALUATIONS = 50
 #N_TIMESTEPS = int(200_000)
-N_TIMESTEPS = int(15000)
+N_TIMESTEPS = int(250_000)
 #EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
 
 # convert all this sloppy code into a factory
