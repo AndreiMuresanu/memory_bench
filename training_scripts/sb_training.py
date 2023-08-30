@@ -64,7 +64,8 @@ def create_unity_env(config, worker_id=0):
 	config_channel.set_configuration_parameters(quality_level=1)  # quality_level 1 is the lowest quality, using this will improve speed
 
 	# Setting Task Parameters
-	#setup_channel.set_float_parameter("max_ingredient_count", -1)
+	for config_name, config_value in config['task_configs'].items():
+		setup_channel.set_float_parameter(config_name, config_value)
 
 	# Select the multi-agent executable
 	kwargs = {
@@ -241,8 +242,8 @@ def sb_training(config):
 		#mode='disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	)
 
-	env = make_env(config, worker_id=0)
-	eval_env = make_env(config, worker_id=1)
+	env = make_env(config, worker_id=10)
+	eval_env = make_env(config, worker_id=11)
 
 	algo = get_algo(config['algo_name'])
 	model = algo(config["policy_type"], env, verbose=config['verbosity'], tensorboard_log=f"runs/{run.id}")
@@ -307,7 +308,7 @@ def get_env_path(config):
 	else:
 		raise ValueError()
 
-	return f'{PROJECT_DIR_PATH}/Builds/{config["env_name"]}/standard/linux/pixel_input/{parallelism_folder}/gamefile.x86_64'
+	return f'{PROJECT_DIR_PATH}/Builds/{config["env_name"]}/{config["task_variant"]}/linux/pixel_input/{parallelism_folder}/gamefile.x86_64'
 
 
 def get_algo(algo_name):
@@ -335,17 +336,25 @@ def get_episode_length(task_name):
 if __name__ == '__main__':
 
 	task_names = [
-		'AllergicRobot',
-		#'MatchingPairs',
-		#'Hallway',
-		#'RecipeRecall'
+		#('AllergicRobot', {}),
+		#('MatchingPairs', {
+		#	'max_ingredient_count': 20,
+		#	'available_ingredient_count': 10
+		#})
+		#('Hallway', {}),
+		('RecipeRecall', {})
 	]
+
+	task_variants = {
+		'standard',
+		#'partial_observability',
+	}
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
 	algo_names = [
-		'PPO',
+		#'PPO',
 		#'RecurrentPPO',
-		#'A2C',
+		'A2C',
 		#'DQN',
 		#'SAC',
 	]
@@ -366,25 +375,28 @@ if __name__ == '__main__':
 		"verbosity": 2,
 	}
 
-	for task_name in tqdm(task_names, desc='tasks completed'):
-		for algo_name in tqdm(algo_names, desc='algos completed'):
-			for trial_num in tqdm(range(num_of_trial_repeats), desc='trials completed'):
-				config = deepcopy(base_config)	# I think deepcopy is likely not needed
-				config['env_name'] = task_name
-				config['algo_name'] = algo_name
-				config['trial_num'] = trial_num
-				config['seed'] = trial_num
+	for task_settings in tqdm(task_names, desc='tasks completed'):
+		for task_variant in tqdm(task_variants, desc='task variants completed'):
+			for algo_name in tqdm(algo_names, desc='algos completed'):
+				for trial_num in tqdm(range(num_of_trial_repeats), desc='trials completed'):
+					config = deepcopy(base_config)	# I think deepcopy is likely not needed
+					config['env_name'] = task_settings[0]
+					config['task_configs'] = task_settings[1]
+					config['task_variant'] = task_variant
+					config['algo_name'] = algo_name
+					config['trial_num'] = trial_num
+					config['seed'] = trial_num
 
-				# convert all this sloppy code into a factory
-				if algo_name == 'RecurrentPPO':
-					config['policy_type'] = 'CnnLstmPolicy'
-				
-				try:
-					sb_training(config)
-					#multi_agent_input_checking(config)
-				except:
-					print('\n\n||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||\n')
-					traceback.print_exc()
-					print('\n||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||\n\n')
+					# convert all this sloppy code into a factory
+					if algo_name == 'RecurrentPPO':
+						config['policy_type'] = 'CnnLstmPolicy'
+					
+					try:
+						sb_training(config)
+						#multi_agent_input_checking(config)
+					except:
+						print('\n\n||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||\n')
+						traceback.print_exc()
+						print('\n||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||\n\n')
 
 	print('\nDONE')
