@@ -261,6 +261,7 @@ def get_episode_length(task_name):
 		'AllergicRobot': 60,	#60 steps for each of our 24 agents
 		'MatchingPairs': 300,
 		'RecipeRecall': 80,
+		'NighttimeNibble': 80,
 		#Hallway has a time limit of 500 steps
 	}
 	return ep_lens[task_name]
@@ -292,8 +293,8 @@ if __name__ == '__main__':
 		#"total_timesteps": 250_000,
 		#"total_timesteps": 10_000,
 		"total_timesteps": 100_000,
-		"parallelism": "single_agent",
-		#"parallelism": "multi_agent",
+		#"parallelism": "single_agent",
+		"parallelism": "multi_agent",
 		#"verbosity": 0,
 		"verbosity": 2,
 	}
