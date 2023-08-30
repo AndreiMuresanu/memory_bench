@@ -147,7 +147,7 @@ def sample_ppo_params(trial: optuna.Trial, parallelism) -> Dict[str, Any]:
         if batch_size > n_steps * 24:
             batch_size = n_steps * 24
     else:
-        raise ValueError(f'Parallelization is invalide: {parallelization}')
+        raise ValueError(f'Parallelism is invalide: {parallelism}')
 
     if lr_schedule == "linear":
         learning_rate = linear_schedule(learning_rate)

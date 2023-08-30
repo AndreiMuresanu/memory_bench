@@ -60,53 +60,18 @@ from rl_zoo_samplers import sample_ppo_params, sample_rppo_params, sample_a2c_pa
 import statistics
 from nasty_evaluate_policy import nasty_evaluate_policy
 
-
 #PROJECT_DIR_PATH = '/h/mskrt/memory_bench'
 PROJECT_DIR_PATH = '/h/andrei/memory_bench'
 
-#N_TRIALS = 40
-#SEED_OFFSET = 0
-#N_EVALUATIONS = 50
-#N_TIMESTEPS = int(200_000)
-N_TIMESTEPS = int(250_000)
+#N_TRIALS = 39
+#SEED_OFFSET = -1
+#N_EVALUATIONS = 49
+#N_TIMESTEPS = int(199_000)
+N_TIMESTEPS = int(249_000)
 #EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
 
-# convert all this sloppy code into a factory
-print(sys.argv); 
-task_name = sys.argv[1]
-print("TASK NAME................", task_name)
 
-algo_name = sys.argv[2]
-print("ALGO NAME................", algo_name)
-
-worker_id = int(sys.argv[3])
-print("worker_id................", worker_id)
-
-SEED_OFFSET = int(sys.argv[4])
-print("SEED_OFFSET................", SEED_OFFSET)
-
-N_TRIALS = int(sys.argv[5])
-print("N_TRIALS................", N_TRIALS)
-
-task_names = [
-	'AllergicRobot',
-	'MatchingPairs',
-	'Hallway',
-	'RecipeRecall'
-]
-
-# can't store the algos directly because we want to be able to directly upload the config dict to wandb
-algo_names = [
-	'PPO',
-	'RecurrentPPO',
-	'A2C',
-	'DQN',
-	#'SAC',
-]
-
-assert task_name in task_names
-assert algo_name in algo_names
-
+# would be really nice to move this outside of the global space
 wandb_kwargs = {
 		"project":"ReMEMber",
 		"entity": "team-andrei",
@@ -118,25 +83,6 @@ wandb_kwargs = {
 	}
 #wandbc = WeightsAndBiasesCallback(metric_name="mean reward", wandb_kwargs=wandb_kwargs, as_multirun=True)
 wandbc = WeightsAndBiasesCallback(wandb_kwargs=wandb_kwargs, as_multirun=True)
-
-base_config = {
-	"policy_type": "CnnPolicy",
-	#"parallelism": "single_agent",
-	#"parallelism": "multi_agent",
-	
-	"total_timesteps": N_TIMESTEPS,
-	'N_TRIALS': N_TRIALS,
-	'SEED_OFFSET': SEED_OFFSET,
-	'worker_id': worker_id,
-
-	'env_name': task_name,
-	'algo_name': algo_name,
-}
-
-if task_name == 'Hallway':
-	base_config['parallelism'] = 'single_agent'
-else:
-	base_config['parallelism'] = 'multi_agent'
 
 
 
@@ -181,17 +127,18 @@ class TRAIN_Per_Episode_Callback(BaseCallback):
 	Custom callback for plotting additional values in tensorboard.
 	"""
 
-	def __init__(self, trial: optuna.Trial, episode_length, verbose=2):
+	def __init__(self, trial: optuna.Trial, episode_length, verbose=2, ignore_trial=False):
 		super().__init__(verbose)
 		self.trial = trial
 		self.episode_length = episode_length
+		self.ignore_trial = ignore_trial
 		self.rollout_partial_cum_batch_reward = np.zeros(24)
 		self.last_ep_time_step = 0
 		self.is_pruned = False
 
 	def _on_step(self) -> bool:
 		self.rollout_partial_cum_batch_reward += self.locals['rewards']
-		
+
 		avg_cum_batch_reward = 0
 		for cum_reward in self.rollout_partial_cum_batch_reward:
 			avg_cum_batch_reward += cum_reward
@@ -214,9 +161,9 @@ class TRAIN_Per_Episode_Callback(BaseCallback):
 			self.last_ep_time_step = self.num_timesteps
 		
 		# Prune trial if need.
-		if self.trial.should_prune():
+		if not self.ignore_trial and self.trial.should_prune():
 			self.is_pruned = True
-			return False	
+			return False
 		else:
 			return True
 
@@ -519,7 +466,64 @@ def get_algo(alg):
 
 
 if __name__ == '__main__':
+	# convert all this sloppy code into a factory
+	print(sys.argv); 
+	task_name = sys.argv[1]
+	print("TASK NAME................", task_name)
+
+	algo_name = sys.argv[2]
+	print("ALGO NAME................", algo_name)
+
+	worker_id = int(sys.argv[3])
+	print("worker_id................", worker_id)
+
+	global SEED_OFFSET
+	SEED_OFFSET = int(sys.argv[4])
+	print("SEED_OFFSET................", SEED_OFFSET)
+
+	global N_TRIALS
+	N_TRIALS = int(sys.argv[5])
+	print("N_TRIALS................", N_TRIALS)
+
+	task_names = [
+		'AllergicRobot',
+		'MatchingPairs',
+		'Hallway',
+		'RecipeRecall'
+	]
+
+	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
+	algo_names = [
+		'PPO',
+		'RecurrentPPO',
+		'A2C',
+		'DQN',
+		#'SAC',
+	]
+
+	assert task_name in task_names
+	assert algo_name in algo_names	
+
+	base_config = {
+		"policy_type": "CnnPolicy",
+		#"parallelism": "single_agent",
+		#"parallelism": "multi_agent",
 		
+		"total_timesteps": N_TIMESTEPS,
+		'N_TRIALS': N_TRIALS,
+		'SEED_OFFSET': SEED_OFFSET,
+		'worker_id': worker_id,
+
+		'env_name': task_name,
+		'algo_name': algo_name,
+	}
+
+	if task_name == 'Hallway':
+		base_config['parallelism'] = 'single_agent'
+	else:
+		base_config['parallelism'] = 'multi_agent'
+
+
 	# Set pytorch num threads to 1 for faster training.
 	torch.set_num_threads(1)
 
@@ -557,5 +561,3 @@ if __name__ == '__main__':
 	print("  User attrs:")
 	for key, value in trial.user_attrs.items():
 		print("    {}: {}".format(key, value)) 
-
-				

@@ -47,6 +47,8 @@ from stable_baselines3 import PPO, SAC, TD3, A2C, DQN
 from sb3_contrib import RecurrentPPO
 import statistics
 
+from nasty_evaluate_policy import nasty_evaluate_policy
+
 
 PROJECT_DIR_PATH = '/h/andrei/memory_bench'
 
@@ -73,7 +75,6 @@ def create_unity_env(config):
 	
 	return UnityEnvironment(get_env_path(config), **kwargs)
 		
-
 
 def make_env(config):
 	try: unity_env.close()
@@ -183,18 +184,36 @@ def sb_training(config):
 
 	algo = get_algo(config['algo_name'])
 	model = algo(config["policy_type"], env, verbose=config['verbosity'], tensorboard_log=f"runs/{run.id}")
-	model.learn(
-		total_timesteps=config["total_timesteps"],
-		callback=WandbCallback(
-			gradient_save_freq=100,
-			model_save_path=f"models/{run.id}",
-			verbose=config['verbosity'],
-		),
-		#callback=MyCallback(),
-		progress_bar=True
-	)
+	
+	wandb_callback = WandbCallback(
+				gradient_save_freq=100,
+				model_save_path=f"models/{run.id}",
+				verbose=config['verbosity'],
+			)
+	
+	if config['parallelism'] == 'single_agent':
+		
+		model.learn(
+			total_timesteps=config["total_timesteps"],
+			callback=wandb_callback,
+			progress_bar=True
+		)
+	
+		eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True)
 
-	eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True)
+	elif config['parallelism'] == 'multi_agent':
+		# importing here to avoid circular import
+		from optuna_hparam_search_multi import TRAIN_Per_Episode_Callback
+		train_callback = TRAIN_Per_Episode_Callback(None, get_episode_length(config['env_name']), ignore_trial=True)
+
+		model.learn(
+			total_timesteps=config["total_timesteps"],
+			callback=[wandb_callback, train_callback],
+			progress_bar=True
+		)
+		
+		eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=get_episode_length(config['env_name']), episode_batch_limit=1)
+
 	
 	eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
 	eval_ep_reward_means_std = statistics.stdev(eval_ep_reward_means)
@@ -250,10 +269,10 @@ def get_episode_length(task_name):
 if __name__ == '__main__':
 
 	task_names = [
-		'AllergicRobot',
+		#'AllergicRobot',
 		#'MatchingPairs',
 		#'Hallway',
-		#'RecipeRecall'
+		'RecipeRecall'
 	]
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
@@ -271,10 +290,10 @@ if __name__ == '__main__':
 	base_config = {
 		"policy_type": "CnnPolicy",
 		#"total_timesteps": 250_000,
-		"total_timesteps": 10_000,
-		#"total_timesteps": 100_000,
-		#"parallelism": "single_agent",
-		"parallelism": "multi_agent",
+		#"total_timesteps": 10_000,
+		"total_timesteps": 100_000,
+		"parallelism": "single_agent",
+		#"parallelism": "multi_agent",
 		#"verbosity": 0,
 		"verbosity": 2,
 	}
