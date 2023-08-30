@@ -54,7 +54,7 @@ PROJECT_DIR_PATH = '/h/andrei/memory_bench'
 
 
 
-def create_unity_env(config):
+def create_unity_env(config, worker_id=0):
 	# Setting Task Parameters
 	setup_channel = EnvironmentParametersChannel()
 	config_channel = EngineConfigurationChannel()
@@ -70,19 +70,18 @@ def create_unity_env(config):
 	kwargs = {
 		'seed': config['seed'],
 		'side_channels': [setup_channel, config_channel],
+		'worker_id': worker_id,
 	}
-	if 'worker_id' in config: kwargs['worker_id'] = config['worker_id']
-	
 	return UnityEnvironment(get_env_path(config), **kwargs)
 		
 
-def make_env(config):
+def make_env(config, worker_id=0):
 	try: unity_env.close()
 	except: pass
 	try: env.close()
 	except: pass
 	
-	unity_env = create_unity_env(config)
+	unity_env = create_unity_env(config, worker_id=worker_id)
 	
 	if config['parallelism'] == 'single_agent':
 		return UnityToGymWrapper(unity_env, uint8_visual=True)
@@ -170,6 +169,68 @@ class MyCallback(BaseCallback):
 		return True
 
 
+class Multi_Agent_Eval_During_Training(BaseCallback):
+	"""
+	Custom callback for plotting additional values in tensorboard.
+	"""
+
+	def __init__(self, eval_env, episode_length, eval_every_n_steps, verbose=2):
+		'''
+		NOTE: eval_every_n_steps is the number of steps (this is self.num_timesteps / n_envs) not the number of steps taken by all agents
+		'''
+		super().__init__(verbose)
+		self.eval_env = eval_env
+		self.episode_length = episode_length
+		self.eval_every_n_steps = eval_every_n_steps
+		self.rollout_partial_cum_batch_reward = np.zeros(24)
+		self.last_ep_time_step = 0
+
+	def _on_step(self) -> bool:
+		self.rollout_partial_cum_batch_reward += self.locals['rewards']
+
+		avg_cum_batch_reward = 0
+		for cum_reward in self.rollout_partial_cum_batch_reward:
+			avg_cum_batch_reward += cum_reward
+		avg_cum_batch_reward /= 24
+		self.logger.record("train/avg_cum_batch_reward", avg_cum_batch_reward)
+		wandb.log({"train/avg_cum_batch_reward": avg_cum_batch_reward})
+		
+		# we divide by 24 because self.num_timesteps is the total number of steps taken by all agents
+		if (self.num_timesteps - self.last_ep_time_step) / 24 >= self.episode_length:
+			print('Episode Complete')
+			print('self.num_timesteps:', self.num_timesteps)
+			print('self.num_timesteps / 24:', self.num_timesteps / 24)
+			print('avg_cum_batch_reward:', avg_cum_batch_reward)
+
+			# The current episode is over
+			self.logger.record("episode/avg_cum_batch_reward", avg_cum_batch_reward)
+			wandb.log({"episode/avg_cum_batch_reward": avg_cum_batch_reward})
+			self.rollout_partial_cum_batch_reward = np.zeros(24)	# reset for the next rollout
+
+			self.last_ep_time_step = self.num_timesteps
+
+		if (self.num_timesteps / 24) % self.eval_every_n_steps == 0:
+			print('\n-------------')
+			print('Evaluating')
+			print('self.num_timesteps:', self.num_timesteps)
+			print('self.eval_every_n_steps:', self.eval_every_n_steps)
+			
+			eval_ep_reward_means = nasty_evaluate_policy(self.model, self.eval_env, episode_length=self.episode_length, episode_batch_limit=1)
+			
+			print('eval/reward_means:', eval_ep_reward_means)
+			eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
+			eval_ep_reward_means_std = statistics.stdev(eval_ep_reward_means)
+			print('eval/reward_means_mean:', eval_ep_reward_means_mean)
+			print('eval/reward_means_std:', eval_ep_reward_means_std)
+		
+			wandb.log({
+				'eval_ep_reward_means': eval_ep_reward_means,
+				'eval_ep_reward_means_mean': eval_ep_reward_means_mean,
+				'eval_ep_reward_means_std': eval_ep_reward_means_std,
+			})
+			print('-------------\n')
+
+
 def sb_training(config):
 	run = wandb.init(
 		project="ReMEMber",
@@ -180,7 +241,8 @@ def sb_training(config):
 		mode='disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	)
 
-	env = make_env(config)
+	env = make_env(config, worker_id=0)
+	eval_env = make_env(config, worker_id=1)
 
 	algo = get_algo(config['algo_name'])
 	model = algo(config["policy_type"], env, verbose=config['verbosity'], tensorboard_log=f"runs/{run.id}")
@@ -199,22 +261,27 @@ def sb_training(config):
 			progress_bar=True
 		)
 	
-		eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True)
+		#eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True)
 
 	elif config['parallelism'] == 'multi_agent':
 		# importing here to avoid circular import
-		from optuna_hparam_search_multi import TRAIN_Per_Episode_Callback
-		train_callback = TRAIN_Per_Episode_Callback(None, get_episode_length(config['env_name']), ignore_trial=True)
+		#from optuna_hparam_search_multi import TRAIN_Per_Episode_Callback
+		#train_callback = TRAIN_Per_Episode_Callback(None, get_episode_length(config['env_name']), ignore_trial=True)
+
+		eval_callback = Multi_Agent_Eval_During_Training(
+												eval_env=eval_env,
+												episode_length=get_episode_length(config['env_name']),
+												eval_every_n_steps=config['eval_every_n_steps'])
 
 		model.learn(
 			total_timesteps=config["total_timesteps"],
-			callback=[wandb_callback, train_callback],
+			callback=[wandb_callback, eval_callback],
 			progress_bar=True
 		)
 		
-		eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=get_episode_length(config['env_name']), episode_batch_limit=1)
+		#eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=get_episode_length(config['env_name']), episode_batch_limit=1)
 
-	
+	'''
 	eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
 	eval_ep_reward_means_std = statistics.stdev(eval_ep_reward_means)
 	print('eval_ep_reward_means:', eval_ep_reward_means)
@@ -226,9 +293,7 @@ def sb_training(config):
 		'eval_ep_reward_means_mean': eval_ep_reward_means_mean,
 		'eval_ep_reward_means_std': eval_ep_reward_means_std,
 	})
-
-	#print("Saving model to sb_model.pkl")
-	#model.save("./models/sb_test_model.pkl")
+	#'''
 
 	env.close()
 	run.finish()
@@ -261,6 +326,7 @@ def get_episode_length(task_name):
 		'AllergicRobot': 60,	#60 steps for each of our 24 agents
 		'MatchingPairs': 300,
 		'RecipeRecall': 80,
+		'NighttimeNibble': 80,
 		#Hallway has a time limit of 500 steps
 	}
 	return ep_lens[task_name]
@@ -269,10 +335,10 @@ def get_episode_length(task_name):
 if __name__ == '__main__':
 
 	task_names = [
-		#'AllergicRobot',
+		'AllergicRobot',
 		#'MatchingPairs',
 		#'Hallway',
-		'RecipeRecall'
+		#'RecipeRecall'
 	]
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
@@ -291,9 +357,11 @@ if __name__ == '__main__':
 		"policy_type": "CnnPolicy",
 		#"total_timesteps": 250_000,
 		#"total_timesteps": 10_000,
-		"total_timesteps": 100_000,
-		"parallelism": "single_agent",
-		#"parallelism": "multi_agent",
+		"total_timesteps": 1_000_000,
+		"eval_every_n_steps": 4167,
+		#"eval_every_n_steps": 42,
+		#"parallelism": "single_agent",
+		"parallelism": "multi_agent",
 		#"verbosity": 0,
 		"verbosity": 2,
 	}
