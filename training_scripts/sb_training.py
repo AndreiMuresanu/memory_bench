@@ -350,8 +350,8 @@ if __name__ == '__main__':
 		#'SAC',
 	]
 
-	#num_of_trial_repeats = 5
-	num_of_trial_repeats = 1
+	num_of_trial_repeats = 5
+	#num_of_trial_repeats = 1
 	
 	base_config = {
 		"policy_type": "CnnPolicy",
