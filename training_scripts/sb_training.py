@@ -35,7 +35,7 @@ stable_baselines3.common.vec_env.base_vec_env.VecEnvWrapper.get_attr = monkey_Ve
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder, VecMonitor
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 
 import supersuit as ss
@@ -170,6 +170,56 @@ class MyCallback(BaseCallback):
 		return True
 
 
+class Eval_every_k_steps_during_training(BaseCallback):
+	"""
+	Custom callback for plotting additional values in tensorboard.
+	"""
+	def __init__(self, eval_env, eval_every_n_steps: int, verbose=2):
+		super().__init__(verbose)
+		self.eval_env = eval_env
+		self.eval_every_n_steps = eval_every_n_steps
+		self.past_k_steps_cum_batch_reward = np.zeros(24)
+		self.last_log_at_step = 0
+		self.is_pruned = False
+
+	def _on_step(self) -> bool:
+		self.past_k_steps_cum_batch_reward += self.locals['rewards']
+		
+		avg_cum_batch_reward = 0
+		for cum_reward in self.past_k_steps_cum_batch_reward:
+			avg_cum_batch_reward += cum_reward
+		avg_cum_batch_reward /= 24
+		
+		self.logger.record("train/cur_step_rewards", self.locals['rewards'])
+		wandb.log({"train/cur_step_rewards": self.locals['rewards']})
+		
+		if (self.num_timesteps - self.last_log_at_step) / 24 >= self.eval_every_n_steps:
+			print('\n-------------')
+			print('Evaluating')
+			print('self.num_timesteps:', self.num_timesteps)
+			print('self.eval_every_n_steps:', self.eval_every_n_steps)
+			
+			self.logger.record("train/past_k_steps_cum_batch_reward", avg_cum_batch_reward)
+			wandb.log({"train/avg_cum_batch_reward": avg_cum_batch_reward})
+			self.past_k_steps_cum_batch_reward = np.zeros(24)	# reset for the next rollout
+			self.last_log_at_step = self.num_timesteps
+
+			eval_ep_reward_means, eval_ep_lens = evaluate_policy(self.model, self.eval_env, n_eval_episodes=24, return_episode_rewards=True)
+			
+			print('eval/reward_means:', eval_ep_reward_means)
+			eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
+			eval_ep_reward_means_std = statistics.stdev(eval_ep_reward_means)
+			print('eval/reward_means_mean:', eval_ep_reward_means_mean)
+			print('eval/reward_means_std:', eval_ep_reward_means_std)
+		
+			wandb.log({
+				'eval_ep_reward_means': eval_ep_reward_means,
+				'eval_ep_reward_means_mean': eval_ep_reward_means_mean,
+				'eval_ep_reward_means_std': eval_ep_reward_means_std,
+			})
+			print('-------------\n')
+
+
 class Multi_Agent_Eval_During_Training(BaseCallback):
 	"""
 	Custom callback for plotting additional values in tensorboard.
@@ -242,11 +292,16 @@ def sb_training(config):
 		#mode='disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	)
 
-	env = make_env(config, worker_id=10)
-	eval_env = make_env(config, worker_id=11)
+	env = make_env(config, worker_id= 10 * config['trial_num'] + 1)
+	eval_env = make_env(config, worker_id= 10 * config['trial_num'] + 2)
+
+	algo_hparams = get_tuned_hparams(config)
+	config['algo_hparams'] = algo_hparams
+	wandb.config.update(config)
 
 	algo = get_algo(config['algo_name'])
-	model = algo(config["policy_type"], env, verbose=config['verbosity'], tensorboard_log=f"runs/{run.id}")
+	model = algo(config["policy_type"], env, verbose=config['verbosity'], tensorboard_log=f"runs/{run.id}", **algo_hparams)
+	#model = algo(config["policy_type"], env, verbose=config['verbosity'], tensorboard_log=f"runs/{run.id}")
 	
 	wandb_callback = WandbCallback(
 				gradient_save_freq=100,
@@ -256,14 +311,11 @@ def sb_training(config):
 	
 	if config['parallelism'] == 'single_agent':
 		
-		model.learn(
-			total_timesteps=config["total_timesteps"],
-			callback=wandb_callback,
-			progress_bar=True
+		eval_callback = Eval_every_k_steps_during_training(
+			eval_env=eval_env,
+			eval_every_n_steps=config['eval_every_n_steps']
 		)
 	
-		#eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True)
-
 	elif config['parallelism'] == 'multi_agent':
 		# importing here to avoid circular import
 		#from optuna_hparam_search_multi import TRAIN_Per_Episode_Callback
@@ -274,14 +326,12 @@ def sb_training(config):
 												episode_length=get_episode_length(config['env_name']),
 												eval_every_n_steps=config['eval_every_n_steps'])
 
-		model.learn(
-			total_timesteps=config["total_timesteps"],
-			callback=[wandb_callback, eval_callback],
-			progress_bar=True
-		)
+	model.learn(
+		total_timesteps=config["total_timesteps"],
+		callback=[wandb_callback, eval_callback],
+		progress_bar=True
+	)
 		
-		#eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=get_episode_length(config['env_name']), episode_batch_limit=1)
-
 	'''
 	eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
 	eval_ep_reward_means_std = statistics.stdev(eval_ep_reward_means)
@@ -300,6 +350,65 @@ def sb_training(config):
 	run.finish()
 
 
+def get_tuned_hparams(config):
+	'''
+	RecurentPPO:
+		- exponent_n_steps -> 2 ** n_steps, 2 ** batch_size
+		- lr -> learning_rate
+	
+	PPO:
+		- delete net_arch
+		- place otho_init and activation_fn in policy_kwargs dict
+	
+	A2C:
+		- delete net_arch
+		- delete lr_schedule
+		- place otho_init and activation_fn in policy_kwargs dict
+	
+	DQN:
+		- delete net_arch
+		- remove subsample_steps
+	'''
+
+	if config['env_name'] == 'MatchingPairs':
+		if config['algo_name'] == 'RecurrentPPO':
+			return {'gamma': 0.016746355949932314, 'max_grad_norm': 0.6603616944130661, 'gae_lambda': 0.002969712124408621, 'learning_rate': 0.7938195135784231, 'n_steps': 2 ** 8, 'batch_size': 2 ** 8}
+		elif config['algo_name'] == 'PPO':
+			return {'batch_size': 512, 'n_steps': 8, 'gamma': 0.995, 'learning_rate': 0.0002135829334270177, 'ent_coef': 0.00036969445332778173, 'clip_range': 0.3, 'n_epochs': 1, 'gae_lambda': 0.9, 'max_grad_norm': 0.3, 'vf_coef': 0.45197572631163613,
+	   				'policy_kwargs': {'activation_fn': 'tanh'}}
+		elif config['algo_name'] == 'A2C':
+			return {'gamma': 0.9, 'normalize_advantage': True, 'max_grad_norm': 2, 'use_rms_prop': True, 'gae_lambda': 0.99, 'n_steps': 2048, 'learning_rate': 0.0030535205881154783, 'ent_coef': 0.0073466987282892054, 'vf_coef': 0.7640759166335485,
+	   				'policy_kwargs': {'ortho_init': False, 'activation_fn': 'relu'}}
+		elif config['algo_name'] == 'DQN':
+			return {'gamma': 0.9999, 'learning_rate': 9.647196829315387e-05, 'batch_size': 256, 'buffer_size': 50000, 'exploration_final_eps': 0.19850177873296748, 'exploration_fraction': 0.4421708361590681, 'target_update_interval': 5000, 'learning_starts': 5000, 'train_freq': 128}
+
+	elif config['env_name'] == 'RecipeRecall':
+		if config['algo_name'] == 'RecurrentPPO':
+			return {'gamma': 0.0002463424821379382, 'max_grad_norm': 0.408005343907218, 'gae_lambda': 0.0010764759356989878, 'n_steps': 2 ** 11, 'batch_size': 2 ** 11, 'learning_rate': 0.02248448303730574}
+		elif config['algo_name'] == 'PPO':
+			return {'batch_size': 512, 'n_steps': 512, 'gamma': 0.995, 'learning_rate': 0.8934617169216622, 'ent_coef': 2.2607764181947015e-08, 'clip_range': 0.2, 'n_epochs': 1, 'gae_lambda': 0.99, 'max_grad_norm': 2, 'vf_coef': 0.023592547432844113, 
+	   				'policy_kwargs': {'activation_fn': 'tanh'}}
+		elif config['algo_name'] == 'A2C':
+			return {'gamma': 0.999, 'normalize_advantage': False, 'max_grad_norm': 0.7, 'use_rms_prop': False, 'gae_lambda': 0.8, 'n_steps': 16, 'learning_rate': 0.0028375309829371128, 'ent_coef': 5.844594453589111e-05, 'vf_coef': 0.18602480535962188,
+	   				'policy_kwargs': {'ortho_init': False, 'activation_fn': 'tanh'}}
+		elif config['algo_name'] == 'DQN':
+			return {'gamma': 0.995, 'learning_rate': 0.00010977412517896284, 'batch_size': 256, 'buffer_size': 10000, 'exploration_final_eps': 0.12543413026880715, 'exploration_fraction': 0.20864568101507242, 'target_update_interval': 1, 'learning_starts': 0, 'train_freq': 1000}
+	
+	elif config['env_name'] == 'Hallway':
+		if config['algo_name'] == 'RecurrentPPO':
+			return {'gamma': 0.04482441745119327, 'max_grad_norm': 0.5674541225381641, 'gae_lambda': 0.004759636080567537, 'learning_rate': 0.002225787528368454, 'n_steps': 2 ** 12, 'batch_size': 2 ** 12}
+		elif config['algo_name'] == 'PPO':
+			return {'batch_size': 8, 'n_steps': 1024, 'gamma': 0.9, 'learning_rate': 0.0007235657689826623, 'ent_coef': 3.824480674854831e-07, 'clip_range': 0.4, 'n_epochs': 10, 'gae_lambda': 0.92, 'max_grad_norm': 5, 'vf_coef': 0.5469145402988822,
+	   				'policy_kwargs': {'activation_fn': 'relu'}}
+		elif config['algo_name'] == 'A2C':
+			return {'gamma': 0.99, 'normalize_advantage': False, 'max_grad_norm': 0.5, 'use_rms_prop': False, 'gae_lambda': 1.0, 'n_steps': 8, 'learning_rate': 1.4828748330328278e-05, 'ent_coef': 0.00018153800413650935, 'vf_coef': 0.6482827665705186,
+	   				'policy_kwargs': {'ortho_init': True, 'activation_fn': 'tanh'}}
+		elif config['algo_name'] == 'DQN':
+			return {'gamma': 0.99, 'learning_rate': 2.233062915762578e-05, 'batch_size': 16, 'buffer_size': 50000, 'exploration_final_eps': 0.04709293769626912, 'exploration_fraction': 0.1989450988054115, 'target_update_interval': 5000, 'learning_starts': 1000, 'train_freq': 8}
+	
+	raise Exception('No tuned hparams found')
+
+
 def get_env_path(config):
 	if config['parallelism'] == 'multi_agent':
 		parallelism_folder = 'multi_agent'
@@ -313,8 +422,8 @@ def get_env_path(config):
 
 def get_algo(algo_name):
 	algos = {
-		'PPO': PPO,
 		'RecurrentPPO': RecurrentPPO,
+		'PPO': PPO,
 		'SAC': SAC,
 		'A2C': A2C,
 		'DQN': DQN,
@@ -337,6 +446,7 @@ if __name__ == '__main__':
 
 	task_names = [
 		#('AllergicRobot', {}),
+		#('MatchingPairs', {}),
 		#('MatchingPairs', {
 		#	'max_ingredient_count': 20,
 		#	'available_ingredient_count': 10
@@ -352,14 +462,14 @@ if __name__ == '__main__':
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
 	algo_names = [
+		'RecurrentPPO',
 		#'PPO',
-		#'RecurrentPPO',
-		'A2C',
+		#'A2C',
 		#'DQN',
-		#'SAC',
 	]
 
-	num_of_trial_repeats = 5
+	#num_of_trial_repeats = 5
+	num_of_trial_repeats = 3
 	#num_of_trial_repeats = 1
 	
 	base_config = {
@@ -367,14 +477,13 @@ if __name__ == '__main__':
 		#"total_timesteps": 250_000,
 		#"total_timesteps": 10_000,
 		"total_timesteps": 1_000_000,
+		#"total_timesteps": 500_000,
 		"eval_every_n_steps": 4167,
 		#"eval_every_n_steps": 42,
-		#"parallelism": "single_agent",
-		"parallelism": "multi_agent",
 		#"verbosity": 0,
 		"verbosity": 2,
 	}
-
+	
 	for task_settings in tqdm(task_names, desc='tasks completed'):
 		for task_variant in tqdm(task_variants, desc='task variants completed'):
 			for algo_name in tqdm(algo_names, desc='algos completed'):
@@ -386,6 +495,11 @@ if __name__ == '__main__':
 					config['algo_name'] = algo_name
 					config['trial_num'] = trial_num
 					config['seed'] = trial_num
+		
+					if config['env_name'] == 'Hallway':
+						config['parallelism'] = 'single_agent'
+					else:
+						config['parallelism'] = 'multi_agent'
 
 					# convert all this sloppy code into a factory
 					if algo_name == 'RecurrentPPO':
