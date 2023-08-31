@@ -469,8 +469,10 @@ if __name__ == '__main__':
 	]
 
 	#num_of_trial_repeats = 5
-	num_of_trial_repeats = 3
-	#num_of_trial_repeats = 1
+	#num_of_trial_repeats = 3
+	num_of_trial_repeats = 1
+
+	trial_offset = 4	# this is the number of runs already completed, this will also set the seed
 	
 	base_config = {
 		"policy_type": "CnnPolicy",
@@ -493,8 +495,9 @@ if __name__ == '__main__':
 					config['task_configs'] = task_settings[1]
 					config['task_variant'] = task_variant
 					config['algo_name'] = algo_name
-					config['trial_num'] = trial_num
-					config['seed'] = trial_num
+					config['trial_offset'] = trial_offset
+					config['trial_num'] = trial_num + trial_offset
+					config['seed'] = trial_num + trial_offset
 		
 					if config['env_name'] == 'Hallway':
 						config['parallelism'] = 'single_agent'
