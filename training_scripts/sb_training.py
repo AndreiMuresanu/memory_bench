@@ -325,7 +325,7 @@ def sb_training(config):
 
 		eval_callback = Multi_Agent_Eval_During_Training(
 												eval_env=eval_env,
-												episode_length=get_episode_length(config['env_name']),
+												episode_length=config['task_configs']['episode_step_count'],
 												eval_every_n_steps=config['eval_every_n_steps'])
 
 	model.learn(
@@ -440,7 +440,7 @@ def get_algo(algo_name):
 	return algos[algo_name]
 
 
-def get_episode_length(task_name):
+def get_default_episode_length(task_name):
 	ep_lens = {
 		'AllergicRobot': 60,	#60 steps for each of our 24 agents
 		'MatchingPairs': 300,
@@ -507,8 +507,12 @@ if __name__ == '__main__':
 					config = deepcopy(base_config)	# I think deepcopy is likely not needed
 					config['env_name'] = task_settings[0]
 					config['task_configs'] = task_settings[1]
+					if 'episode_step_count' not in config['task_configs']:
+						config['task_configs']['episode_step_count'] = get_default_episode_length(config['env_name'])
+					
 					config['task_variant'] = task_variant
 					config['algo_name'] = algo_name
+
 					config['trial_num'] = trial_num + trial_offset
 					config['seed'] = trial_num + trial_offset
 		

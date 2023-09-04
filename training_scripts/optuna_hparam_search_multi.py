@@ -55,7 +55,7 @@ from optuna.integration.wandb import WeightsAndBiasesCallback
 from copy import deepcopy
 from tqdm import tqdm
 
-from sb_training import make_env, get_episode_length
+from sb_training import make_env, get_default_episode_length
 from rl_zoo_samplers import sample_ppo_params, sample_rppo_params, sample_a2c_params, sample_dqn_params
 import statistics
 from nasty_evaluate_policy import nasty_evaluate_policy
@@ -362,7 +362,7 @@ def objective(trial: optuna.Trial) -> float:
 		if config['parallelism'] == 'single_agent':
 			train_callback = Past_1k_Steps_Callback(trial)
 		elif config['parallelism'] == 'multi_agent':
-			train_callback = TRAIN_Per_Episode_Callback(trial, get_episode_length(config['env_name']))
+			train_callback = TRAIN_Per_Episode_Callback(trial, config['task_configs']['episode_step_count'])
 		else:
 			raise ValueError(f'Invalid parallelism: {config["parallelism"]}')
 
@@ -407,7 +407,7 @@ def objective(trial: optuna.Trial) -> float:
 			_, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback._on_step)
 			#'''
 			
-			eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=get_episode_length(config['env_name']), episode_batch_limit=1)
+			eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=config['task_configs']['episode_step_count'], episode_batch_limit=1)
 
 		else:
 			raise ValueError(f"Invalid parallelism: {config['parallelism']}")
@@ -522,6 +522,10 @@ if __name__ == '__main__':
 		base_config['parallelism'] = 'single_agent'
 	else:
 		base_config['parallelism'] = 'multi_agent'
+
+	base_config['task_configs'] = {}
+	if 'episode_step_count' not in base_config['task_configs']:
+		base_config['task_configs']['episode_step_count'] = get_default_episode_length(base_config['env_name'])
 
 
 	# Set pytorch num threads to 1 for faster training.
