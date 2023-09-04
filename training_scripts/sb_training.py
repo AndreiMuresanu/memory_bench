@@ -487,6 +487,7 @@ if __name__ == '__main__':
 		#"eval_every_n_steps": 42,
 		#"verbosity": 0,
 		"verbosity": 2,
+		"os": 'linux'
 	}
 	
 	#num_of_trial_repeats = 5
