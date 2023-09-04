@@ -54,6 +54,7 @@ PROJECT_DIR_PATH = '/h/andrei/memory_bench'
 
 
 
+# TODO: make this function take in actual params not just the config
 def create_unity_env(config, worker_id=0):
 	# Setting Task Parameters
 	setup_channel = EnvironmentParametersChannel()
@@ -76,6 +77,7 @@ def create_unity_env(config, worker_id=0):
 	return UnityEnvironment(get_env_path(config), **kwargs)
 		
 
+# TODO: make this function take in actual params not just the config
 def make_env(config, worker_id=0):
 	try: unity_env.close()
 	except: pass
@@ -350,6 +352,7 @@ def sb_training(config):
 	run.finish()
 
 
+# TODO: make this function take in actual params not just the config
 def get_tuned_hparams(config):
 	'''
 	RecurentPPO:
@@ -409,6 +412,7 @@ def get_tuned_hparams(config):
 	raise Exception('No tuned hparams found')
 
 
+# TODO: make this function take in actual params not just the config
 def get_env_path(config):
 	if config['parallelism'] == 'multi_agent':
 		parallelism_folder = 'multi_agent'
@@ -417,7 +421,12 @@ def get_env_path(config):
 	else:
 		raise ValueError()
 
-	return f'{PROJECT_DIR_PATH}/Builds/{config["env_name"]}/{config["task_variant"]}/linux/pixel_input/{parallelism_folder}/gamefile.x86_64'
+	if config['os'] == 'linux':
+		return f'{PROJECT_DIR_PATH}/Builds/{config["env_name"]}/{config["task_variant"]}/linux/pixel_input/{parallelism_folder}/gamefile.x86_64'
+	elif config['os'] == 'windows':
+		return f'{PROJECT_DIR_PATH}/Builds/{config["env_name"]}/{config["task_variant"]}/windows/pixel_input/{parallelism_folder}/memory_palace_2.exe'
+	else:
+		raise ValueError()
 
 
 def get_algo(algo_name):
@@ -451,8 +460,8 @@ if __name__ == '__main__':
 		#	'max_ingredient_count': 20,
 		#	'available_ingredient_count': 10
 		#})
-		#('Hallway', {}),
-		('RecipeRecall', {})
+		('Hallway', {}),
+		#('RecipeRecall', {})
 	]
 
 	task_variants = {
@@ -462,18 +471,12 @@ if __name__ == '__main__':
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
 	algo_names = [
-		'RecurrentPPO',
-		#'PPO',
+		#'RecurrentPPO',
+		'PPO',
 		#'A2C',
 		#'DQN',
 	]
 
-	#num_of_trial_repeats = 5
-	#num_of_trial_repeats = 3
-	num_of_trial_repeats = 1
-
-	trial_offset = 4	# this is the number of runs already completed, this will also set the seed
-	
 	base_config = {
 		"policy_type": "CnnPolicy",
 		#"total_timesteps": 250_000,
@@ -486,6 +489,16 @@ if __name__ == '__main__':
 		"verbosity": 2,
 	}
 	
+	#num_of_trial_repeats = 5
+	#num_of_trial_repeats = 2
+	num_of_trial_repeats = 1
+
+	#trial_offset = 0	# this is the number of runs already completed, this will also set the seed
+	trial_offset = 5	# this is the number of runs already completed, this will also set the seed
+	
+	base_config['num_of_trial_repeats'] = num_of_trial_repeats
+	base_config['trial_offset'] = trial_offset
+	
 	for task_settings in tqdm(task_names, desc='tasks completed'):
 		for task_variant in tqdm(task_variants, desc='task variants completed'):
 			for algo_name in tqdm(algo_names, desc='algos completed'):
@@ -495,7 +508,6 @@ if __name__ == '__main__':
 					config['task_configs'] = task_settings[1]
 					config['task_variant'] = task_variant
 					config['algo_name'] = algo_name
-					config['trial_offset'] = trial_offset
 					config['trial_num'] = trial_num + trial_offset
 					config['seed'] = trial_num + trial_offset
 		
