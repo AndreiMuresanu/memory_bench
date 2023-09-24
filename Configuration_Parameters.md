@@ -17,7 +17,7 @@ Taken from the ML-Agents Low-Level Python API docs (https://unity-technologies.g
 
 - file_name: is the name of the environment binary (located in the root directory of the python project).
 - worker_id: indicates which port to use for communication with the environment. For use in parallel training regimes such as A3C.
-- seed: indicates the seed to use when generating random numbers during the training process. In environments which are stochastic, setting the seed enables reproducible experimentation by ensuring that the environment and trainers utilize the same random seed.
+- seed: indicates the seed to use when generating random numbers during the training process. In environments which are stochastic, setting the seed enables reproducible experimentation by ensuring that the environment and trainers utilize the same random seed. IMPORTANT: This seed does not control environment initialization. For example, in Allergic Robot this seed will NOT control the tastiness of each food. To control initialization stochasticity you must use the "initialization_seed".
 - side_channels: provides a way to exchange data with the Unity simulation that is not related to the reinforcement learning loop. For example: configurations or properties. More on them in the Side Channels doc (https://unity-technologies.github.io/ml-agents/Custom-SideChannels/).
 
 
