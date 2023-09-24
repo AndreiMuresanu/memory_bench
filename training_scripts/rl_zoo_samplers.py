@@ -88,7 +88,7 @@ def sample_rppo_params(trial: optuna.Trial): # -> dict[str, Any]:
 	max_grad_norm = trial.suggest_float("max_grad_norm", 0.3, 5.0, log=True)
 	gae_lambda = 1.0 - trial.suggest_float("gae_lambda", 0.001, 0.2, log=True)
 	n_steps = 2 ** trial.suggest_int("exponent_n_steps", 7, 12)
-	batch_size = 2 ** trial.suggest_int("exponent_n_steps", 3, 10)
+	batch_size = 2 ** trial.suggest_int("batch_size", 3, 10)
 	learning_rate = trial.suggest_float("lr", 1e-5, 1, log=True)
 
 	# Display true values.
