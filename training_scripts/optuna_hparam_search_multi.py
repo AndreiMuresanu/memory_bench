@@ -518,10 +518,11 @@ if __name__ == '__main__':
 		'algo_name': algo_name,
 	}
 
-	if task_name == 'Hallway':
-		base_config['parallelism'] = 'single_agent'
-	else:
-		base_config['parallelism'] = 'multi_agent'
+	#if task_name == 'Hallway':
+	#	base_config['parallelism'] = 'single_agent'
+	#else:
+	#	base_config['parallelism'] = 'multi_agent'
+	base_config['parallelism'] = 'single_agent'	# overriding to single_agent parallelism
 
 	base_config['task_configs'] = {}
 	if 'episode_step_count' not in base_config['task_configs']:
