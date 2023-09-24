@@ -375,10 +375,12 @@ def objective(trial: optuna.Trial) -> float:
 		if train_callback.is_pruned:
 			raise optuna.exceptions.TrialPruned()
 
+		print('Evaluating... this may take a while.')
+
 		if config['parallelism'] == 'single_agent':
 			#my_eval_callback = Past_1k_Steps_Callback
 			#eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback)
-			eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True)
+			eval_ep_reward_means, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24 * config['num_final_eval_batches'], return_episode_rewards=True)
 		
 		elif config['parallelism'] == 'multi_agent':
 			
@@ -406,8 +408,10 @@ def objective(trial: optuna.Trial) -> float:
 			
 			_, eval_ep_lens = evaluate_policy(model, env, n_eval_episodes=24, return_episode_rewards=True, callback=my_eval_callback._on_step)
 			#'''
-			
-			eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=config['task_configs']['episode_step_count'], episode_batch_limit=1)
+
+			#TODO: verify that episode_batch_limit actually does something (hopefully the right thing)
+			assert 1 == 2
+			eval_ep_reward_means = nasty_evaluate_policy(model, env, episode_length=config['task_configs']['episode_step_count'], episode_batch_limit=config['num_final_eval_batches'])
 
 		else:
 			raise ValueError(f"Invalid parallelism: {config['parallelism']}")
@@ -516,6 +520,10 @@ if __name__ == '__main__':
 
 		'env_name': task_name,
 		'algo_name': algo_name,
+
+		'num_final_eval_batches': 10,	#this corresponds to 100 * 24 eval episodes
+		'os': 'linux',
+		'task_variant': 'standard',
 	}
 
 	#if task_name == 'Hallway':
