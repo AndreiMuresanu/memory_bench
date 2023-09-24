@@ -67,6 +67,8 @@ def create_unity_env(config, worker_id=0):
 	# Setting Task Parameters
 	for config_name, config_value in config['task_configs'].items():
 		setup_channel.set_float_parameter(config_name, config_value)
+	
+	setup_channel.set_float_parameter('initialization_seed', config['seed'])	# the initialization_seed controls environment initialization (ex., food tastiness in AllegicRobot). Not all envs have this parameter
 
 	# Select the multi-agent executable
 	kwargs = {
@@ -548,7 +550,8 @@ if __name__ == '__main__':
 		#"eval_every_n_steps": 42,
 		#"verbosity": 0,
 		"verbosity": 2,
-		"os": 'linux'
+		"os": 'linux',
+		"parallelism_override": "single_agent",
 	}
 	
 	#num_of_trial_repeats = 5
@@ -579,11 +582,14 @@ if __name__ == '__main__':
 					config['trial_num'] = trial_num + trial_offset
 					config['seed'] = trial_num + trial_offset
 		
-					if config['env_name'] == 'Hallway':
-						config['parallelism'] = 'single_agent'
+					if 'parallelism_override' in config:
+						config['parallelism'] = config['parallelism_override']
 					else:
-						config['parallelism'] = 'multi_agent'
-
+						if config['env_name'] == 'Hallway':
+							config['parallelism'] = 'single_agent'
+						else:
+							config['parallelism'] = 'multi_agent'
+					
 					# convert all this sloppy code into a factory
 					if algo_name == 'RecurrentPPO':
 						config['policy_type'] = 'CnnLstmPolicy'
