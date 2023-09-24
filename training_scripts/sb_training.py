@@ -284,7 +284,7 @@ class Multi_Agent_Eval_During_Training(BaseCallback):
 			print('-------------\n')
 
 
-def sb_training(config):
+def sb_training(config, base_worker_id=0):
 	run = wandb.init(
 		project="ReMEMber",
 		config=config,
@@ -294,10 +294,11 @@ def sb_training(config):
 		#mode='disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	)
 
-	env = make_env(config, worker_id= 10 * config['trial_num'] + 1)
-	eval_env = make_env(config, worker_id= 10 * config['trial_num'] + 2)
+	env = make_env(config, worker_id= base_worker_id)
+	eval_env = make_env(config, worker_id= base_worker_id +1)
 
-	algo_hparams = get_tuned_hparams(config)
+	#algo_hparams = get_tuned_hparams(config)
+	algo_hparams = {}
 	config['algo_hparams'] = algo_hparams
 	wandb.config.update(config)
 
@@ -361,7 +362,7 @@ def get_tuned_hparams(config):
 	
 	PPO:
 		- delete net_arch
-		- place otho_init and activation_fn in policy_kwargs dict
+		- place activation_fn in policy_kwargs dict
 	
 	A2C:
 		- delete net_arch
@@ -373,7 +374,18 @@ def get_tuned_hparams(config):
 		- remove subsample_steps
 	'''
 
-	if config['env_name'] == 'MatchingPairs':
+	if config['env_name'] == 'AllergicRobot':
+		if config['algo_name'] == 'RecurrentPPO':
+			raise NotImplementedError()
+		elif config['algo_name'] == 'PPO':
+			return {'batch_size': 256, 'n_steps': 512, 'gamma': 0.9999, 'learning_rate': 0.00019041130378367774, 'ent_coef': 0.0010172703599020106, 'clip_range': 0.2, 'n_epochs': 5, 'gae_lambda': 0.98, 'max_grad_norm': 0.3, 'vf_coef': 0.023440179472901085,
+		   			'policy_kwargs': {'activation_fn': 'tanh'}}
+		elif config['algo_name'] == 'A2C':
+			raise NotImplementedError()
+		elif config['algo_name'] == 'DQN':
+			raise NotImplementedError()
+	
+	elif config['env_name'] == 'MatchingPairs':
 		if config['algo_name'] == 'RecurrentPPO':
 			return {'gamma': 0.016746355949932314, 'max_grad_norm': 0.6603616944130661, 'gae_lambda': 0.002969712124408621, 'learning_rate': 0.7938195135784231, 'n_steps': 2 ** 8, 'batch_size': 2 ** 8}
 		elif config['algo_name'] == 'PPO':
@@ -455,12 +467,61 @@ if __name__ == '__main__':
 
 	task_names = [
 		#('AllergicRobot', {}),
+		('AllergicRobot', {
+			'episode_step_count': 100,
+			'max_ingredient_count': 1,
+			'available_ingredient_count': 1,
+			'allergic_prob': 0.5,
+			'allergic_tastiness': -5,
+			'love_prob': 0.5,
+			'love_tastiness': 5
+		}),
+		('AllergicRobot', {
+			'episode_step_count': 100,
+			'max_ingredient_count': 2,
+			'available_ingredient_count': 1,
+			'allergic_prob': 0.5,
+			'allergic_tastiness': -5,
+			'love_prob': 0.5,
+			'love_tastiness': 5
+		}),
+		('AllergicRobot', {
+			'episode_step_count': 100,
+			'max_ingredient_count': 4,
+			'available_ingredient_count': 1,
+			'allergic_prob': 0.5,
+			'allergic_tastiness': -5,
+			'love_prob': 0.5,
+			'love_tastiness': 5
+		}),
+		'''
+		('AllergicRobot', {
+			'episode_step_count': 100,
+			'max_ingredient_count': 10,
+			'available_ingredient_count': 1,
+			'allergic_prob': 0.5,
+			'allergic_tastiness': -5,
+			'love_prob': 0.5,
+			'love_tastiness': 5
+		}),
+		#'''
+		'''
+		('AllergicRobot', {
+			'episode_step_count': 100,
+			'max_ingredient_count': 30,
+			'available_ingredient_count': 1,
+			'allergic_prob': 0.5,
+			'allergic_tastiness': -5,
+			'love_prob': 0.5,
+			'love_tastiness': 5
+		}),
+		#'''
 		#('MatchingPairs', {}),
 		#('MatchingPairs', {
 		#	'max_ingredient_count': 20,
 		#	'available_ingredient_count': 10
 		#})
-		('Hallway', {}),
+		#('Hallway', {}),
 		#('RecipeRecall', {})
 	]
 
@@ -471,17 +532,17 @@ if __name__ == '__main__':
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
 	algo_names = [
-		#'RecurrentPPO',
 		'PPO',
-		#'A2C',
-		#'DQN',
+		'RecurrentPPO',
+		'A2C',
+		'DQN',
 	]
 
 	base_config = {
 		"policy_type": "CnnPolicy",
-		#"total_timesteps": 250_000,
+		"total_timesteps": 500_000,
 		#"total_timesteps": 10_000,
-		"total_timesteps": 1_000_000,
+		#"total_timesteps": 1_000_000,
 		#"total_timesteps": 500_000,
 		"eval_every_n_steps": 4167,
 		#"eval_every_n_steps": 42,
@@ -491,15 +552,17 @@ if __name__ == '__main__':
 	}
 	
 	#num_of_trial_repeats = 5
-	#num_of_trial_repeats = 2
-	num_of_trial_repeats = 1
+	num_of_trial_repeats = 3
+	#num_of_trial_repeats = 1
 
-	#trial_offset = 0	# this is the number of runs already completed, this will also set the seed
-	trial_offset = 5	# this is the number of runs already completed, this will also set the seed
+	trial_offset = 0	# this is the number of runs already completed, this will also set the seed
+	#trial_offset = 5	# this is the number of runs already completed, this will also set the seed
 	
 	base_config['num_of_trial_repeats'] = num_of_trial_repeats
 	base_config['trial_offset'] = trial_offset
-	
+
+
+	cur_worker_id = 0
 	for task_settings in tqdm(task_names, desc='tasks completed'):
 		for task_variant in tqdm(task_variants, desc='task variants completed'):
 			for algo_name in tqdm(algo_names, desc='algos completed'):
@@ -526,11 +589,13 @@ if __name__ == '__main__':
 						config['policy_type'] = 'CnnLstmPolicy'
 					
 					try:
-						sb_training(config)
+						sb_training(config, base_worker_id=cur_worker_id)
 						#multi_agent_input_checking(config)
 					except:
 						print('\n\n||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||\n')
 						traceback.print_exc()
 						print('\n||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||\n\n')
+
+					cur_worker_id += 2
 
 	print('\nDONE')
