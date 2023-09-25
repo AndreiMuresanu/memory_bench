@@ -493,7 +493,8 @@ if __name__ == '__main__':
 		'AllergicRobot',
 		'MatchingPairs',
 		'Hallway',
-		'RecipeRecall'
+		'RecipeRecall',
+		'NighttimeNibble'
 	]
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
