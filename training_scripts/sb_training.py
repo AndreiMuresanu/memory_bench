@@ -65,8 +65,9 @@ def create_unity_env(config, worker_id=0):
 	config_channel.set_configuration_parameters(quality_level=1)  # quality_level 1 is the lowest quality, using this will improve speed
 
 	# Setting Task Parameters
-	for config_name, config_value in config['task_configs'].items():
-		setup_channel.set_float_parameter(config_name, config_value)
+	if 'task_configs' in config:
+		for config_name, config_value in config['task_configs'].items():
+			setup_channel.set_float_parameter(config_name, config_value)
 	
 	setup_channel.set_float_parameter('initialization_seed', config['seed'])	# the initialization_seed controls environment initialization (ex., food tastiness in AllegicRobot). Not all envs have this parameter
 
@@ -178,13 +179,14 @@ class Eval_every_k_steps_during_training(BaseCallback):
 	"""
 	Custom callback for plotting additional values in tensorboard.
 	"""
-	def __init__(self, eval_env, eval_every_n_steps: int, verbose=2):
+	def __init__(self, eval_env, eval_every_n_steps: int, eval_ep_batch_limit, verbose=2):
 		super().__init__(verbose)
 		self.eval_env = eval_env
 		self.eval_every_n_steps = eval_every_n_steps
 		self.past_k_steps_cum_batch_reward = np.zeros(24)
 		self.last_log_at_step = 0
 		self.is_pruned = False
+		self.eval_ep_batch_limit = eval_ep_batch_limit
 
 	def _on_step(self) -> bool:
 		self.past_k_steps_cum_batch_reward += self.locals['rewards']
@@ -208,7 +210,7 @@ class Eval_every_k_steps_during_training(BaseCallback):
 			self.past_k_steps_cum_batch_reward = np.zeros(24)	# reset for the next rollout
 			self.last_log_at_step = self.num_timesteps
 
-			eval_ep_reward_means, eval_ep_lens = evaluate_policy(self.model, self.eval_env, n_eval_episodes=24, return_episode_rewards=True)
+			eval_ep_reward_means, eval_ep_lens = evaluate_policy(self.model, self.eval_env, n_eval_episodes=24 * self.eval_ep_batch_limit, return_episode_rewards=True)
 			
 			print('eval/reward_means:', eval_ep_reward_means)
 			eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
@@ -229,7 +231,7 @@ class Multi_Agent_Eval_During_Training(BaseCallback):
 	Custom callback for plotting additional values in tensorboard.
 	"""
 
-	def __init__(self, eval_env, episode_length, eval_every_n_steps, verbose=2):
+	def __init__(self, eval_env, episode_length, eval_every_n_steps, eval_ep_batch_limit, verbose=2):
 		'''
 		NOTE: eval_every_n_steps is the number of steps (this is self.num_timesteps / n_envs) not the number of steps taken by all agents
 		'''
@@ -239,6 +241,7 @@ class Multi_Agent_Eval_During_Training(BaseCallback):
 		self.eval_every_n_steps = eval_every_n_steps
 		self.rollout_partial_cum_batch_reward = np.zeros(24)
 		self.last_ep_time_step = 0
+		self.eval_ep_batch_limit = eval_ep_batch_limit
 
 	def _on_step(self) -> bool:
 		self.rollout_partial_cum_batch_reward += self.locals['rewards']
@@ -270,7 +273,7 @@ class Multi_Agent_Eval_During_Training(BaseCallback):
 			print('self.num_timesteps:', self.num_timesteps)
 			print('self.eval_every_n_steps:', self.eval_every_n_steps)
 			
-			eval_ep_reward_means = nasty_evaluate_policy(self.model, self.eval_env, episode_length=self.episode_length, episode_batch_limit=1)
+			eval_ep_reward_means = nasty_evaluate_policy(self.model, self.eval_env, episode_length=self.episode_length, episode_batch_limit=self.eval_ep_batch_limit)
 			
 			print('eval/reward_means:', eval_ep_reward_means)
 			eval_ep_reward_means_mean = statistics.mean(eval_ep_reward_means)
@@ -291,8 +294,8 @@ def sb_training(config, base_worker_id=0):
 		project="ReMEMber",
 		config=config,
 		sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
-		monitor_gym=True,  # auto-upload the videos of agents playing the game
-		save_code=True,  # optional
+		#monitor_gym=True,  # auto-upload the videos of agents playing the game
+		#save_code=True,  # optional
 		#mode='disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	)
 
@@ -318,7 +321,8 @@ def sb_training(config, base_worker_id=0):
 		
 		eval_callback = Eval_every_k_steps_during_training(
 			eval_env=eval_env,
-			eval_every_n_steps=config['eval_every_n_steps']
+			eval_every_n_steps=config['eval_every_n_steps'],
+			eval_ep_batch_limit=config['eval_ep_batch_limit']
 		)
 	
 	elif config['parallelism'] == 'multi_agent':
@@ -329,7 +333,8 @@ def sb_training(config, base_worker_id=0):
 		eval_callback = Multi_Agent_Eval_During_Training(
 												eval_env=eval_env,
 												episode_length=config['task_configs']['episode_step_count'],
-												eval_every_n_steps=config['eval_every_n_steps'])
+												eval_every_n_steps=config['eval_every_n_steps'],
+												eval_ep_batch_limit=config['eval_ep_batch_limit'])
 
 	model.learn(
 		total_timesteps=config["total_timesteps"],
@@ -351,6 +356,8 @@ def sb_training(config, base_worker_id=0):
 	})
 	#'''
 
+	wandb.log({'trial_completed': True})
+
 	env.close()
 	run.finish()
 
@@ -359,7 +366,8 @@ def sb_training(config, base_worker_id=0):
 def get_tuned_hparams(config):
 	'''
 	RecurentPPO:
-		- exponent_n_steps -> 2 ** n_steps, 2 ** batch_size
+		- exponent_n_steps -> 2 ** n_steps
+		- batch_size -> 2 ** batch_size
 		- lr -> learning_rate
 	
 	PPO:
@@ -373,56 +381,59 @@ def get_tuned_hparams(config):
 	
 	DQN:
 		- delete net_arch
-		- remove subsample_steps
+		- delete subsample_steps
 	'''
 
 	if config['env_name'] == 'AllergicRobot':
 		if config['algo_name'] == 'RecurrentPPO':
-			raise NotImplementedError()
+			return {'gamma': 0.05162942889076221, 'max_grad_norm': 0.3057031072878, 'gae_lambda': 0.048305110032528104, 'n_steps': 2**11, 'batch_size': 2**4, 'learning_rate': 2.8228513595556785e-05}
 		elif config['algo_name'] == 'PPO':
-			return {'batch_size': 256, 'n_steps': 512, 'gamma': 0.9999, 'learning_rate': 0.00019041130378367774, 'ent_coef': 0.0010172703599020106, 'clip_range': 0.2, 'n_epochs': 5, 'gae_lambda': 0.98, 'max_grad_norm': 0.3, 'vf_coef': 0.023440179472901085,
-		   			'policy_kwargs': {'activation_fn': 'tanh'}}
+			return {'batch_size': 64, 'n_steps': 1024, 'gamma': 0.99, 'learning_rate': 0.0003220875664345723, 'ent_coef': 0.022499613441502295, 'clip_range': 0.2, 'n_epochs': 1, 'gae_lambda': 0.9, 'max_grad_norm': 0.5, 'vf_coef': 0.6571489857204025, 'policy_kwargs': {'activation_fn': 'relu'}}
 		elif config['algo_name'] == 'A2C':
-			raise NotImplementedError()
+			return {'gamma': 0.9999, 'normalize_advantage': True, 'max_grad_norm': 1, 'use_rms_prop': True, 'gae_lambda': 0.8, 'n_steps': 256, 'learning_rate': 0.00031943120803574587, 'ent_coef': 0.007825130002826634, 'vf_coef': 0.18499334787277233, 'policy_kwargs': {'ortho_init': True, 'activation_fn': 'relu'}}
 		elif config['algo_name'] == 'DQN':
-			raise NotImplementedError()
-	
+			return {'gamma': 0.95, 'learning_rate': 2.5403375669292505e-05, 'batch_size': 32, 'buffer_size': 50000, 'exploration_final_eps': 0.014933120004429902, 'exploration_fraction': 0.1074899271846918, 'target_update_interval': 10000, 'learning_starts': 1000, 'train_freq': 8}
+
 	elif config['env_name'] == 'MatchingPairs':
 		if config['algo_name'] == 'RecurrentPPO':
-			return {'gamma': 0.016746355949932314, 'max_grad_norm': 0.6603616944130661, 'gae_lambda': 0.002969712124408621, 'learning_rate': 0.7938195135784231, 'n_steps': 2 ** 8, 'batch_size': 2 ** 8}
+			raise NotImplementedError()
 		elif config['algo_name'] == 'PPO':
-			return {'batch_size': 512, 'n_steps': 8, 'gamma': 0.995, 'learning_rate': 0.0002135829334270177, 'ent_coef': 0.00036969445332778173, 'clip_range': 0.3, 'n_epochs': 1, 'gae_lambda': 0.9, 'max_grad_norm': 0.3, 'vf_coef': 0.45197572631163613,
-	   				'policy_kwargs': {'activation_fn': 'tanh'}}
+			raise NotImplementedError()
 		elif config['algo_name'] == 'A2C':
-			return {'gamma': 0.9, 'normalize_advantage': True, 'max_grad_norm': 2, 'use_rms_prop': True, 'gae_lambda': 0.99, 'n_steps': 2048, 'learning_rate': 0.0030535205881154783, 'ent_coef': 0.0073466987282892054, 'vf_coef': 0.7640759166335485,
-	   				'policy_kwargs': {'ortho_init': False, 'activation_fn': 'relu'}}
+			raise NotImplementedError()
 		elif config['algo_name'] == 'DQN':
-			return {'gamma': 0.9999, 'learning_rate': 9.647196829315387e-05, 'batch_size': 256, 'buffer_size': 50000, 'exploration_final_eps': 0.19850177873296748, 'exploration_fraction': 0.4421708361590681, 'target_update_interval': 5000, 'learning_starts': 5000, 'train_freq': 128}
+			raise NotImplementedError()
 
 	elif config['env_name'] == 'RecipeRecall':
 		if config['algo_name'] == 'RecurrentPPO':
-			return {'gamma': 0.0002463424821379382, 'max_grad_norm': 0.408005343907218, 'gae_lambda': 0.0010764759356989878, 'n_steps': 2 ** 11, 'batch_size': 2 ** 11, 'learning_rate': 0.02248448303730574}
+			return {'gamma': 0.0010718881282612545, 'max_grad_norm': 0.9772450706550261, 'gae_lambda': 0.035433708191283886, 'n_steps': 2**12, 'batch_size': 2**4, 'learning_rate': 1.765747016242211e-05}
 		elif config['algo_name'] == 'PPO':
-			return {'batch_size': 512, 'n_steps': 512, 'gamma': 0.995, 'learning_rate': 0.8934617169216622, 'ent_coef': 2.2607764181947015e-08, 'clip_range': 0.2, 'n_epochs': 1, 'gae_lambda': 0.99, 'max_grad_norm': 2, 'vf_coef': 0.023592547432844113, 
-	   				'policy_kwargs': {'activation_fn': 'tanh'}}
+			return {'batch_size': 256, 'n_steps': 16, 'gamma': 0.99, 'learning_rate': 0.0015797642791422666, 'ent_coef': 0.09811609107275152, 'clip_range': 0.3, 'n_epochs': 20, 'gae_lambda': 0.8, 'max_grad_norm': 0.8, 'vf_coef': 0.1401427820809994, 'policy_kwargs': {'activation_fn': 'tanh'}}
 		elif config['algo_name'] == 'A2C':
-			return {'gamma': 0.999, 'normalize_advantage': False, 'max_grad_norm': 0.7, 'use_rms_prop': False, 'gae_lambda': 0.8, 'n_steps': 16, 'learning_rate': 0.0028375309829371128, 'ent_coef': 5.844594453589111e-05, 'vf_coef': 0.18602480535962188,
-	   				'policy_kwargs': {'ortho_init': False, 'activation_fn': 'tanh'}}
+			return {'gamma': 0.995, 'normalize_advantage': False, 'max_grad_norm': 0.8, 'use_rms_prop': True, 'gae_lambda': 0.8, 'n_steps': 512, 'learning_rate': 0.8745687561393394, 'ent_coef': 4.69458776891305e-08, 'vf_coef': 0.1401427820809994, 'policy_kwargs': {'ortho_init': False, 'activation_fn': 'tanh'}}
 		elif config['algo_name'] == 'DQN':
-			return {'gamma': 0.995, 'learning_rate': 0.00010977412517896284, 'batch_size': 256, 'buffer_size': 10000, 'exploration_final_eps': 0.12543413026880715, 'exploration_fraction': 0.20864568101507242, 'target_update_interval': 1, 'learning_starts': 0, 'train_freq': 1000}
-	
+			return {'gamma': 0.98, 'learning_rate': 0.00036789267373174057, 'batch_size': 128, 'buffer_size': 50000, 'exploration_final_eps': 0.02244382854142717, 'exploration_fraction': 0.4265962665550733, 'target_update_interval': 10000, 'learning_starts': 0, 'train_freq': 256}
+
 	elif config['env_name'] == 'Hallway':
 		if config['algo_name'] == 'RecurrentPPO':
-			return {'gamma': 0.04482441745119327, 'max_grad_norm': 0.5674541225381641, 'gae_lambda': 0.004759636080567537, 'learning_rate': 0.002225787528368454, 'n_steps': 2 ** 12, 'batch_size': 2 ** 12}
+			raise NotImplementedError()
 		elif config['algo_name'] == 'PPO':
-			return {'batch_size': 8, 'n_steps': 1024, 'gamma': 0.9, 'learning_rate': 0.0007235657689826623, 'ent_coef': 3.824480674854831e-07, 'clip_range': 0.4, 'n_epochs': 10, 'gae_lambda': 0.92, 'max_grad_norm': 5, 'vf_coef': 0.5469145402988822,
-	   				'policy_kwargs': {'activation_fn': 'relu'}}
+			raise NotImplementedError()
 		elif config['algo_name'] == 'A2C':
-			return {'gamma': 0.99, 'normalize_advantage': False, 'max_grad_norm': 0.5, 'use_rms_prop': False, 'gae_lambda': 1.0, 'n_steps': 8, 'learning_rate': 1.4828748330328278e-05, 'ent_coef': 0.00018153800413650935, 'vf_coef': 0.6482827665705186,
-	   				'policy_kwargs': {'ortho_init': True, 'activation_fn': 'tanh'}}
+			raise NotImplementedError()
 		elif config['algo_name'] == 'DQN':
-			return {'gamma': 0.99, 'learning_rate': 2.233062915762578e-05, 'batch_size': 16, 'buffer_size': 50000, 'exploration_final_eps': 0.04709293769626912, 'exploration_fraction': 0.1989450988054115, 'target_update_interval': 5000, 'learning_starts': 1000, 'train_freq': 8}
-	
+			raise NotImplementedError()
+		
+	elif config['env_name'] == 'NighttimeNibble':
+		if config['algo_name'] == 'RecurrentPPO':
+			return {'gamma': 0.00016363606806014624, 'max_grad_norm': 0.5924896508351762, 'gae_lambda': 0.0352077488139621, 'n_steps': 2**10, 'batch_size': 2**4, 'learning_rate': 1.5447298394759683e-05}
+		elif config['algo_name'] == 'PPO':
+			return {'batch_size': 16, 'n_steps': 1024, 'gamma': 0.9, 'learning_rate': 0.00022179549930824454, 'ent_coef': 0.0007748112012025851, 'clip_range': 0.3, 'n_epochs': 5, 'gae_lambda': 0.98, 'max_grad_norm': 0.5, 'vf_coef': 0.4131187535782552, 'policy_kwargs': {'activation_fn': 'relu'}}
+		elif config['algo_name'] == 'A2C':
+			return {'gamma': 0.95, 'normalize_advantage': False, 'max_grad_norm': 2, 'use_rms_prop': True, 'gae_lambda': 0.8, 'n_steps': 128, 'learning_rate': 6.199039493203095e-05, 'ent_coef': 0.07967237805050456, 'vf_coef': 0.46295090640468417, 'policy_kwargs': {'ortho_init': False, 'activation_fn': 'relu'}}
+		elif config['algo_name'] == 'DQN':
+			return {'gamma': 0.99, 'learning_rate': 1.302261230213109e-05, 'batch_size': 512, 'buffer_size': 1000000, 'exploration_final_eps': 0.08855880994513149, 'exploration_fraction': 0.29743629876761535, 'target_update_interval': 1000, 'learning_starts': 10000, 'train_freq': 1000}
+
 	raise Exception('No tuned hparams found')
 
 
@@ -468,63 +479,34 @@ def get_default_episode_length(task_name):
 if __name__ == '__main__':
 
 	task_names = [
-		#('AllergicRobot', {}),
-		('AllergicRobot', {
-			'episode_step_count': 100,
-			'max_ingredient_count': 1,
-			'available_ingredient_count': 1,
-			'allergic_prob': 0.5,
-			'allergic_tastiness': -5,
-			'love_prob': 0.5,
-			'love_tastiness': 5
-		}),
-		('AllergicRobot', {
-			'episode_step_count': 100,
-			'max_ingredient_count': 2,
-			'available_ingredient_count': 1,
-			'allergic_prob': 0.5,
-			'allergic_tastiness': -5,
-			'love_prob': 0.5,
-			'love_tastiness': 5
-		}),
-		('AllergicRobot', {
-			'episode_step_count': 100,
-			'max_ingredient_count': 4,
-			'available_ingredient_count': 1,
-			'allergic_prob': 0.5,
-			'allergic_tastiness': -5,
-			'love_prob': 0.5,
-			'love_tastiness': 5
-		}),
-		'''
-		('AllergicRobot', {
-			'episode_step_count': 100,
-			'max_ingredient_count': 10,
-			'available_ingredient_count': 1,
-			'allergic_prob': 0.5,
-			'allergic_tastiness': -5,
-			'love_prob': 0.5,
-			'love_tastiness': 5
-		}),
-		#'''
-		'''
-		('AllergicRobot', {
-			'episode_step_count': 100,
-			'max_ingredient_count': 30,
-			'available_ingredient_count': 1,
-			'allergic_prob': 0.5,
-			'allergic_tastiness': -5,
-			'love_prob': 0.5,
-			'love_tastiness': 5
-		}),
-		#'''
+		#('RecipeRecall', {}),
+		('AllergicRobot', {}),
 		#('MatchingPairs', {}),
+		#('Hallway', {}),
+		#('NighttimeNibble', {}),
+		
+		# ('AllergicRobot', {
+		# 	'episode_step_count': 100,
+		# 	'max_ingredient_count': 10,
+		# 	'available_ingredient_count': 1,
+		# 	'allergic_prob': 0.5,
+		# 	'allergic_tastiness': -5,
+		# 	'love_prob': 0.5,
+		# 	'love_tastiness': 5
+		# }),
+		# ('AllergicRobot', {
+		# 	'episode_step_count': 100,
+		# 	'max_ingredient_count': 30,
+		# 	'available_ingredient_count': 1,
+		# 	'allergic_prob': 0.5,
+		# 	'allergic_tastiness': -5,
+		# 	'love_prob': 0.5,
+		# 	'love_tastiness': 5
+		# }),
 		#('MatchingPairs', {
 		#	'max_ingredient_count': 20,
 		#	'available_ingredient_count': 10
 		#})
-		#('Hallway', {}),
-		#('RecipeRecall', {})
 	]
 
 	task_variants = {
@@ -534,32 +516,33 @@ if __name__ == '__main__':
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
 	algo_names = [
+		#'RecurrentPPO',
 		'PPO',
-		'RecurrentPPO',
-		'A2C',
-		'DQN',
+		#'A2C',
+		#'DQN',
 	]
 
 	base_config = {
 		"policy_type": "CnnPolicy",
-		"total_timesteps": 500_000,
-		#"total_timesteps": 10_000,
 		#"total_timesteps": 1_000_000,
-		#"total_timesteps": 500_000,
-		"eval_every_n_steps": 4167,
-		#"eval_every_n_steps": 42,
+		"total_timesteps": 500_000,
+		#"total_timesteps": 1000,
+		#"eval_every_n_steps": 4166,	#this is total_timesteps_so_far / 24
+		"eval_every_n_steps": 2083,	#this is total_timesteps_so_far / 24
+		#"eval_every_n_steps": 42,	#this is total_timesteps_so_far / 24
+		"eval_ep_batch_limit": 10,
 		#"verbosity": 0,
 		"verbosity": 2,
 		"os": 'linux',
 		"parallelism_override": "single_agent",
 	}
 	
-	#num_of_trial_repeats = 5
-	num_of_trial_repeats = 3
+	num_of_trial_repeats = 5
+	#num_of_trial_repeats = 2
 	#num_of_trial_repeats = 1
 
 	trial_offset = 0	# this is the number of runs already completed, this will also set the seed
-	#trial_offset = 5	# this is the number of runs already completed, this will also set the seed
+	#trial_offset = 4	# this is the number of runs already completed, this will also set the seed
 	
 	base_config['num_of_trial_repeats'] = num_of_trial_repeats
 	base_config['trial_offset'] = trial_offset
@@ -573,9 +556,7 @@ if __name__ == '__main__':
 					config = deepcopy(base_config)	# I think deepcopy is likely not needed
 					config['env_name'] = task_settings[0]
 					config['task_configs'] = task_settings[1]
-					if 'episode_step_count' not in config['task_configs']:
-						config['task_configs']['episode_step_count'] = get_default_episode_length(config['env_name'])
-					
+
 					config['task_variant'] = task_variant
 					config['algo_name'] = algo_name
 
@@ -589,6 +570,9 @@ if __name__ == '__main__':
 							config['parallelism'] = 'single_agent'
 						else:
 							config['parallelism'] = 'multi_agent'
+					
+					if config['parallelism'] == 'multi_agent' and 'episode_step_count' not in config['task_configs']:
+						config['task_configs']['episode_step_count'] = get_default_episode_length(config['env_name'])
 					
 					# convert all this sloppy code into a factory
 					if algo_name == 'RecurrentPPO':
