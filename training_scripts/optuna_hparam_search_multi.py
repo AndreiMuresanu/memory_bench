@@ -76,8 +76,8 @@ wandb_kwargs = {
 		"project":"ReMEMber",
 		"entity": "team-andrei",
 		"sync_tensorboard":True,  # auto-upload sb3's tensorboard metrics
-		#"monitor_gym":True,  # auto-upload the videos of agents playing the game
-		#"save_code":True,  # optional
+		"monitor_gym": False,  # auto-upload the videos of agents playing the game
+		"save_code": False,  # optional
 		#"name": "{}_{}_200k-steps".format(task_name, algo_name),
 		#'mode': 'disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	}
@@ -328,7 +328,7 @@ def objective(trial: optuna.Trial) -> float:
 	print("config", config)
 	wandb.config.update(config)
 
-	env = make_env(config)
+	env = make_env(config, worker_id=config['worker_id'])
 	
 	kwargs = {"policy": config['policy_type'],
 			  "env": env,
@@ -534,8 +534,9 @@ if __name__ == '__main__':
 	base_config['parallelism'] = 'single_agent'	# overriding to single_agent parallelism
 
 	base_config['task_configs'] = {}
-	if 'episode_step_count' not in base_config['task_configs']:
-		base_config['task_configs']['episode_step_count'] = get_default_episode_length(base_config['env_name'])
+	if base_config['parallelism'] == 'multi_agent':
+		if 'episode_step_count' not in base_config['task_configs']:
+			base_config['task_configs']['episode_step_count'] = get_default_episode_length(base_config['env_name'])
 
 
 	# Set pytorch num threads to 1 for faster training.

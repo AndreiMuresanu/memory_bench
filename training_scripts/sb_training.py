@@ -14,6 +14,8 @@ from wandb.integration.sb3 import WandbCallback
 from copy import deepcopy
 from tqdm import tqdm
 import traceback
+import sys
+import json
 
 # MONKEY PATCH START, I THINK ORDER OF IMPORTS MATTERS?
 
@@ -68,8 +70,9 @@ def create_unity_env(config, worker_id=0):
 	if 'task_configs' in config:
 		for config_name, config_value in config['task_configs'].items():
 			setup_channel.set_float_parameter(config_name, config_value)
-	
-	setup_channel.set_float_parameter('initialization_seed', config['seed'])	# the initialization_seed controls environment initialization (ex., food tastiness in AllegicRobot). Not all envs have this parameter
+
+	if config['env_name'] != 'Hallway':
+		setup_channel.set_float_parameter('initialization_seed', config['seed'])	# the initialization_seed controls environment initialization (ex., food tastiness in AllegicRobot). Not all envs have this parameter
 
 	# Select the multi-agent executable
 	kwargs = {
@@ -294,8 +297,8 @@ def sb_training(config, base_worker_id=0):
 		project="ReMEMber",
 		config=config,
 		sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
-		#monitor_gym=True,  # auto-upload the videos of agents playing the game
-		#save_code=True,  # optional
+		monitor_gym=False,  # auto-upload the videos of agents playing the game
+		save_code=False,  # optional
 		#mode='disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	)
 
@@ -396,13 +399,13 @@ def get_tuned_hparams(config):
 
 	elif config['env_name'] == 'MatchingPairs':
 		if config['algo_name'] == 'RecurrentPPO':
-			raise NotImplementedError()
+			return {'gamma': 0.00018762999357827245, 'max_grad_norm': 0.7997837266556623, 'gae_lambda': 0.011356657047837546, 'n_steps': 2**9, 'batch_size': 2**8, 'learning_rate': 0.0024636321465350977}
 		elif config['algo_name'] == 'PPO':
-			raise NotImplementedError()
+			return {'batch_size': 128, 'n_steps': 8, 'gamma': 0.995, 'learning_rate': 0.06306895058245429, 'ent_coef': 0.0024140577982147264, 'clip_range': 0.2, 'n_epochs': 10, 'gae_lambda': 0.99, 'max_grad_norm': 0.5, 'vf_coef': 0.8982249321828276, 'policy_kwargs': {'activation_fn': 'tanh'}}
 		elif config['algo_name'] == 'A2C':
-			raise NotImplementedError()
+			return {'gamma': 0.9, 'normalize_advantage': False, 'max_grad_norm': 0.9, 'use_rms_prop': True, 'gae_lambda': 0.99, 'n_steps': 8, 'learning_rate': 0.0009614056590056587, 'ent_coef': 0.0004704211381462, 'vf_coef': 0.6766379244656838, 'policy_kwargs': {'ortho_init': True, 'activation_fn': 'tanh'}}
 		elif config['algo_name'] == 'DQN':
-			raise NotImplementedError()
+			return {'gamma': 0.98, 'learning_rate': 3.231135953900954e-05, 'batch_size': 64, 'buffer_size': 50000, 'exploration_final_eps': 0.10192608886462212, 'exploration_fraction': 0.3766475218948329, 'target_update_interval': 15000, 'learning_starts': 10000, 'train_freq': 8}
 
 	elif config['env_name'] == 'RecipeRecall':
 		if config['algo_name'] == 'RecurrentPPO':
@@ -416,13 +419,13 @@ def get_tuned_hparams(config):
 
 	elif config['env_name'] == 'Hallway':
 		if config['algo_name'] == 'RecurrentPPO':
-			raise NotImplementedError()
+			return {'gamma': 0.008874973671221307, 'max_grad_norm': 0.8243599176209708, 'gae_lambda': 0.001263813978827776, 'n_steps': 2**8, 'batch_size': 2**9, 'learning_rate': 0.00010856854224558122}
 		elif config['algo_name'] == 'PPO':
-			raise NotImplementedError()
+			return {'batch_size': 16, 'n_steps': 128, 'gamma': 0.995, 'learning_rate': 0.00002829867046740601, 'ent_coef': 0.024572636179435677, 'clip_range': 0.2, 'n_epochs': 10, 'gae_lambda': 0.92, 'max_grad_norm': 5, 'vf_coef': 0.02736370912859387, 'policy_kwargs': {'activation_fn': 'tanh'}}
 		elif config['algo_name'] == 'A2C':
-			raise NotImplementedError()
+			return {'gamma': 0.95, 'normalize_advantage': False, 'max_grad_norm': 0.5, 'use_rms_prop': True, 'gae_lambda': 0.8, 'n_steps': 256, 'learning_rate': 0.00002380358967013441, 'ent_coef': 0.00000203659391223045, 'vf_coef': 0.9846257776254022, 'policy_kwargs': {'ortho_init': False, 'activation_fn': 'tanh'}}
 		elif config['algo_name'] == 'DQN':
-			raise NotImplementedError()
+			return {'gamma': 0.9, 'learning_rate': 0.0004352354146364453, 'batch_size': 512, 'buffer_size': 1_000_000, 'exploration_final_eps': 0.09268838794133678, 'exploration_fraction': 0.2361913661788495, 'target_update_interval': 5000, 'learning_starts': 1000, 'train_freq': 1000}
 		
 	elif config['env_name'] == 'NighttimeNibble':
 		if config['algo_name'] == 'RecurrentPPO':
@@ -477,115 +480,13 @@ def get_default_episode_length(task_name):
 
 
 if __name__ == '__main__':
+	# load config given cmd line arg and launch training
 
-	task_names = [
-		#('RecipeRecall', {}),
-		('AllergicRobot', {}),
-		#('MatchingPairs', {}),
-		#('Hallway', {}),
-		#('NighttimeNibble', {}),
-		
-		# ('AllergicRobot', {
-		# 	'episode_step_count': 100,
-		# 	'max_ingredient_count': 10,
-		# 	'available_ingredient_count': 1,
-		# 	'allergic_prob': 0.5,
-		# 	'allergic_tastiness': -5,
-		# 	'love_prob': 0.5,
-		# 	'love_tastiness': 5
-		# }),
-		# ('AllergicRobot', {
-		# 	'episode_step_count': 100,
-		# 	'max_ingredient_count': 30,
-		# 	'available_ingredient_count': 1,
-		# 	'allergic_prob': 0.5,
-		# 	'allergic_tastiness': -5,
-		# 	'love_prob': 0.5,
-		# 	'love_tastiness': 5
-		# }),
-		#('MatchingPairs', {
-		#	'max_ingredient_count': 20,
-		#	'available_ingredient_count': 10
-		#})
-	]
+	print('sys.argv:', sys.argv)
+	config_path = sys.argv[1]
+	print("CONFIG PATH................", config_path)
 
-	task_variants = {
-		'standard',
-		#'partial_observability',
-	}
+	with open(config_path, 'r') as f:
+		config = json.load(f)
 
-	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
-	algo_names = [
-		#'RecurrentPPO',
-		'PPO',
-		#'A2C',
-		#'DQN',
-	]
-
-	base_config = {
-		"policy_type": "CnnPolicy",
-		#"total_timesteps": 1_000_000,
-		"total_timesteps": 500_000,
-		#"total_timesteps": 1000,
-		#"eval_every_n_steps": 4166,	#this is total_timesteps_so_far / 24
-		"eval_every_n_steps": 2083,	#this is total_timesteps_so_far / 24
-		#"eval_every_n_steps": 42,	#this is total_timesteps_so_far / 24
-		"eval_ep_batch_limit": 10,
-		#"verbosity": 0,
-		"verbosity": 2,
-		"os": 'linux',
-		"parallelism_override": "single_agent",
-	}
-	
-	num_of_trial_repeats = 5
-	#num_of_trial_repeats = 2
-	#num_of_trial_repeats = 1
-
-	trial_offset = 0	# this is the number of runs already completed, this will also set the seed
-	#trial_offset = 4	# this is the number of runs already completed, this will also set the seed
-	
-	base_config['num_of_trial_repeats'] = num_of_trial_repeats
-	base_config['trial_offset'] = trial_offset
-
-
-	cur_worker_id = 0
-	for task_settings in tqdm(task_names, desc='tasks completed'):
-		for task_variant in tqdm(task_variants, desc='task variants completed'):
-			for algo_name in tqdm(algo_names, desc='algos completed'):
-				for trial_num in tqdm(range(num_of_trial_repeats), desc='trials completed'):
-					config = deepcopy(base_config)	# I think deepcopy is likely not needed
-					config['env_name'] = task_settings[0]
-					config['task_configs'] = task_settings[1]
-
-					config['task_variant'] = task_variant
-					config['algo_name'] = algo_name
-
-					config['trial_num'] = trial_num + trial_offset
-					config['seed'] = trial_num + trial_offset
-		
-					if 'parallelism_override' in config:
-						config['parallelism'] = config['parallelism_override']
-					else:
-						if config['env_name'] == 'Hallway':
-							config['parallelism'] = 'single_agent'
-						else:
-							config['parallelism'] = 'multi_agent'
-					
-					if config['parallelism'] == 'multi_agent' and 'episode_step_count' not in config['task_configs']:
-						config['task_configs']['episode_step_count'] = get_default_episode_length(config['env_name'])
-					
-					# convert all this sloppy code into a factory
-					if algo_name == 'RecurrentPPO':
-						config['policy_type'] = 'CnnLstmPolicy'
-					
-					try:
-						sb_training(config, base_worker_id=cur_worker_id)
-						#multi_agent_input_checking(config)
-					except:
-						print('\n\n||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||\n')
-						traceback.print_exc()
-						print('\n||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||\n\n')
-
-					cur_worker_id += 2
-
-	print('\nDONE')
+	sb_training(config=config)

@@ -5,10 +5,16 @@ from PIL import Image
 
 
 def main():
-   path_to_env = r'C:\Users\Andrei\Documents\vector_institute\memory_palace_stuff\unity_projects\memory_palace_2\Builds\windows\pixel_input'
+   #path_to_env = r'C:\Users\Andrei\Documents\vector_institute\memory_palace_stuff\unity_projects\memory_palace_2\Builds\windows\pixel_input'
+   path_to_env = '/h/andrei/memory_bench/Builds/TempLinux/Hallway/gamefile.x86_64'
    unity_env = UnityEnvironment(path_to_env)
+
+   print('========== created Unity Env ==========')
+
    env = UnityToGymWrapper(unity_env, uint8_visual=True)
    #env = gym.make("LunarLander-v2", render_mode="human")
+   
+   print('========== created Gym Env ==========')
 
    observation = env.reset()
    for cur_step in range(5):
