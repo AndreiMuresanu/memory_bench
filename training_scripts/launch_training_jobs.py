@@ -9,8 +9,10 @@ import traceback
 
 SBATCH_CONFIG_FOLDER = '/h/andrei/memory_bench/training_scripts/sbatch_temp_configs'
 SBATCH_SH_FOLDER = '/h/andrei/memory_bench/training_scripts/sbatch_temp_sh_scripts'
-SBTACH_BASEFILE_PATH = '/h/andrei/memory_bench/training_scripts/sb_training_sbatch_basefile.sh'
-TRAINING_CMD = 'xvfb-run -s "-screen 0 100x100x24" -a python sb_training.py'
+#SBTACH_BASEFILE_PATH = '/h/andrei/memory_bench/training_scripts/sb_training_sbatch_basefile.sh'
+SBTACH_BASEFILE_PATH = '/h/andrei/memory_bench/training_scripts/sb_training_t4_sbatch_basefile.sh'
+#TRAINING_CMD = 'xvfb-run -s "-screen 0 100x100x24" -a python sb_training.py'
+TRAINING_CMD = 'xvfb-run -s "-screen 0 100x100x24" -a python eval_random_agent.py'
 
 
 def get_config_path():
@@ -64,11 +66,11 @@ def launch_sbatch_job(config):
 
 def main():
 	task_names = [
-		#('RecipeRecall', {}),
-		#('AllergicRobot', {}),
-		#('MatchingPairs', {}),
+		('RecipeRecall', {}),
+		('AllergicRobot', {}),
+		('MatchingPairs', {}),
 		('Hallway', {}),
-		#('NighttimeNibble', {}),
+		('NighttimeNibble', {}),
 		
 		# ('AllergicRobot', {
 		#  	'episode_step_count': 100,
@@ -101,10 +103,11 @@ def main():
 
 	# can't store the algos directly because we want to be able to directly upload the config dict to wandb
 	algo_names = [
-		'RecurrentPPO',
+		#'RecurrentPPO',
 		#'PPO',
 		#'A2C',
 		#'DQN',
+		'random'
 	]
 
 	base_config = {
@@ -122,8 +125,11 @@ def main():
 		"parallelism_override": "single_agent",
 	}
 
-	#which_trials = [0, 1, 2, 4]
-	which_trials = [0, 3, 4]
+	#which_trials = []	# rppo
+	#which_trials = [2, 3]	# ppo
+	#which_trials = []	# a2c
+	#which_trials = []	# dqn
+	which_trials = [0]
 
 	# num_of_trial_repeats = 3
 	# #num_of_trial_repeats = 1

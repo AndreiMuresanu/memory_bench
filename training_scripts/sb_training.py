@@ -490,3 +490,7 @@ if __name__ == '__main__':
 		config = json.load(f)
 
 	sb_training(config=config)
+
+	sys.exit('Training Complete.')
+	exit()
+	quit()

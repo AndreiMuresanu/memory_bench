@@ -1,0 +1,37 @@
+srun -x gpu002 -c 8 --gres=gpu:1 --partition="a40" --mem=167G --qos deadline --account deadline --pty bash
+
+i think following are ok, i just cant seem to run two training runs on the same gpu
+
+srun -x gpu008,gpu015,gpu055,gpu003,gpu056,gpu051,gpu052,gpu029,gpu001,gpu028,gpu013,gpu012,gpu030,gpu004,gpu002,gpu009,gpu031,gpu034,gpu036,gpu014,gpu035,gpu010,gpu033,gpu007,gpu053,gpu032,gpu040,gpu041,gpu050,gpu046,gpu047,gpu039,gpu044,gpu048,gpu054,gpu042,gpu049,gpu027,gpu045 -c 8 --gres=gpu:1 --partition="a40" --qos="m2" --mem=40G -t 8:00:00 --pty bash
+
+srun -x gpu027,gpu045,gpu055,gpu001,gpu010,gpu034,gpu056,gpu003,gpu004,gpu030,gpu031 -c 8 --gres=gpu:1 --partition="a40" --qos="m2" --mem=40G -t 8:00:00 --pty bash
+
+cd ~/memory_bench/training_scripts
+source ~/.bashrc
+conda activate unity_3
+
+
+chmod -R 755 ~/memory_bench
+
+xvfb-run -s "-screen 0 100x100x24" -a [cmd]
+xvfb-run -s "-screen 0 100x100x24" -a python sb_training.py
+xvfb-run -s "-screen 0 100x100x24" -a python eval_random_agent.py
+
+
+xvfb-run -s "-screen 0 100x100x24" -a python optuna_hparam_search_multi.py "Hallway" "RecurrentPPO" 0 74 1
+xvfb-run -s "-screen 0 100x100x24" -a python optuna_hparam_search_multi.py "Hallway" "PPO" 0 74 1
+xvfb-run -s "-screen 0 100x100x24" -a python optuna_hparam_search_multi.py "Hallway" "DQN" 0 74 1
+
+xvfb-run -s "-screen 0 100x100x24" -a python optuna_hparam_search_multi.py "Hallway" "A2C" 0 72 3
+
+
+screen order:
+1. RecurrentPPO
+2. PPO
+3. A2C
+4. DQN
+
+
+FIXED, thus no need:
+conda activate /h/andrei/anaconda3/envs/unity_3
+export PATH=/h/andrei/anaconda3/envs/unity_3/bin:$PATH

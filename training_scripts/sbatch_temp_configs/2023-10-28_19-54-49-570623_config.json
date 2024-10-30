@@ -1,0 +1,18 @@
+{
+    "policy_type": "CnnLstmPolicy",
+    "total_timesteps": 500000,
+    "eval_every_n_steps": 2083,
+    "eval_ep_batch_limit": 10,
+    "verbosity": 2,
+    "os": "linux",
+    "parallelism_override": "single_agent",
+    "num_of_trial_repeats": 5,
+    "trial_offset": 0,
+    "env_name": "Hallway",
+    "task_configs": {},
+    "task_variant": "standard",
+    "algo_name": "RecurrentPPO",
+    "trial_num": 2,
+    "seed": 2,
+    "parallelism": "single_agent"
+}

@@ -1,0 +1,5 @@
+/h/andrei/cuda/bin:/h/andrei/cudnn/bin:/h/andrei/anaconda3/envs/unity_3/bin:/h/andrei/.local/lib:/h/andrei/anaconda3/bin:/h/andrei/anaconda3/condabin:/h/andrei/cuda/bin:/h/andrei/cudnn/bin:/h/andrei/anaconda3/bin:/h/andrei/.local/lib:/opt/slurm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 21
+    episode_length = get_default_episode_length(config['env_name']
+                                               ^
+SyntaxError: '(' was never closed

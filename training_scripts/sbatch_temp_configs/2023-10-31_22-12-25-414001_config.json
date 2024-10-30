@@ -1,0 +1,16 @@
+{
+    "policy_type": "CnnPolicy",
+    "total_timesteps": 500000,
+    "eval_every_n_steps": 2083,
+    "eval_ep_batch_limit": 10,
+    "verbosity": 2,
+    "os": "linux",
+    "parallelism_override": "single_agent",
+    "env_name": "RecipeRecall",
+    "task_configs": {},
+    "task_variant": "standard",
+    "algo_name": "random",
+    "trial_num": 0,
+    "seed": 0,
+    "parallelism": "single_agent"
+}
