@@ -11,8 +11,8 @@ SBATCH_CONFIG_FOLDER = '/h/andrei/memory_bench/training_scripts/sbatch_temp_conf
 SBATCH_SH_FOLDER = '/h/andrei/memory_bench/training_scripts/sbatch_temp_sh_scripts'
 #SBTACH_BASEFILE_PATH = '/h/andrei/memory_bench/training_scripts/sb_training_sbatch_basefile.sh'
 SBTACH_BASEFILE_PATH = '/h/andrei/memory_bench/training_scripts/sb_training_t4_sbatch_basefile.sh'
-#TRAINING_CMD = 'xvfb-run -s "-screen 0 100x100x24" -a python sb_training.py'
-TRAINING_CMD = 'xvfb-run -s "-screen 0 100x100x24" -a python eval_random_agent.py'
+TRAINING_CMD = 'xvfb-run -s "-screen 0 100x100x24" -a python sb_training.py'
+#TRAINING_CMD = 'xvfb-run -s "-screen 0 100x100x24" -a python eval_random_agent.py'
 
 
 def get_config_path():
@@ -66,11 +66,11 @@ def launch_sbatch_job(config):
 
 def main():
 	task_names = [
-		('RecipeRecall', {}),
+		#('RecipeRecall', {}),
 		('AllergicRobot', {}),
-		('MatchingPairs', {}),
-		('Hallway', {}),
-		('NighttimeNibble', {}),
+		#('MatchingPairs', {}),
+		#('Hallway', {}),
+		#('NighttimeNibble', {}),
 		
 		# ('AllergicRobot', {
 		#  	'episode_step_count': 100,
@@ -105,9 +105,9 @@ def main():
 	algo_names = [
 		#'RecurrentPPO',
 		#'PPO',
-		#'A2C',
+		'A2C',
 		#'DQN',
-		'random'
+		#'random'
 	]
 
 	base_config = {

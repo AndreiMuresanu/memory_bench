@@ -35,3 +35,6 @@ screen order:
 FIXED, thus no need:
 conda activate /h/andrei/anaconda3/envs/unity_3
 export PATH=/h/andrei/anaconda3/envs/unity_3/bin:$PATH
+
+
+xvfb-run -s "-screen 0 100x100x24" -a python env_input_checking.py

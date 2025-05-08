@@ -1,0 +1,27 @@
+2024-10-30 12:45:39,063 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Current SDK version is 0.15.8
+2024-10-30 12:45:39,063 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Configure stats pid to 20856
+2024-10-30 12:45:39,064 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Loading settings from /h/andrei/.config/wandb/settings
+2024-10-30 12:45:39,064 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Loading settings from /fs01/home/andrei/memory_bench/training_scripts/wandb/settings
+2024-10-30 12:45:39,064 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-10-30 12:45:39,064 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2024-10-30 12:45:39,064 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'training_scripts/eval_random_agent.py', 'program': '/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py'}
+2024-10-30 12:45:39,064 INFO    MainThread:20856 [wandb_init.py:_log_setup():507] Logging user logs to /fs01/home/andrei/memory_bench/training_scripts/wandb/run-20241030_124539-3m536r5z/logs/debug.log
+2024-10-30 12:45:39,064 INFO    MainThread:20856 [wandb_init.py:_log_setup():508] Logging internal logs to /fs01/home/andrei/memory_bench/training_scripts/wandb/run-20241030_124539-3m536r5z/logs/debug-internal.log
+2024-10-30 12:45:39,064 INFO    MainThread:20856 [wandb_init.py:init():547] calling init triggers
+2024-10-30 12:45:39,065 INFO    MainThread:20856 [wandb_init.py:init():554] wandb.init called with sweep_config: {}
+config: {'policy_type': 'CnnPolicy', 'total_timesteps': 500000, 'eval_every_n_steps': 2083, 'eval_ep_batch_limit': 10, 'verbosity': 2, 'os': 'linux', 'parallelism_override': 'single_agent', 'task_configs': {}, 'task_variant': 'standard', 'algo_name': 'random', 'trial_num': 0, 'seed': 0, 'parallelism': 'single_agent', 'env_name': 'Hallway'}
+2024-10-30 12:45:39,066 INFO    MainThread:20856 [wandb_init.py:init():591] wandb.init() called when a run is still active
+2024-10-30 12:45:45,094 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Current SDK version is 0.15.8
+2024-10-30 12:45:45,094 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Configure stats pid to 20856
+2024-10-30 12:45:45,095 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Loading settings from /h/andrei/.config/wandb/settings
+2024-10-30 12:45:45,095 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Loading settings from /fs01/home/andrei/memory_bench/training_scripts/wandb/settings
+2024-10-30 12:45:45,095 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-10-30 12:45:45,095 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2024-10-30 12:45:45,095 INFO    MainThread:20856 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'training_scripts/eval_random_agent.py', 'program': '/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py'}
+2024-10-30 12:45:45,095 INFO    MainThread:20856 [wandb_init.py:_log_setup():507] Logging user logs to /fs01/home/andrei/memory_bench/training_scripts/wandb/run-20241030_124545-pic69drh/logs/debug.log
+2024-10-30 12:45:45,095 INFO    MainThread:20856 [wandb_init.py:_log_setup():508] Logging internal logs to /fs01/home/andrei/memory_bench/training_scripts/wandb/run-20241030_124545-pic69drh/logs/debug-internal.log
+2024-10-30 12:45:45,096 INFO    MainThread:20856 [wandb_init.py:init():547] calling init triggers
+2024-10-30 12:45:45,096 INFO    MainThread:20856 [wandb_init.py:init():554] wandb.init called with sweep_config: {}
+config: {'policy_type': 'CnnPolicy', 'total_timesteps': 500000, 'eval_every_n_steps': 2083, 'eval_ep_batch_limit': 10, 'verbosity': 2, 'os': 'linux', 'parallelism_override': 'single_agent', 'task_configs': {}, 'task_variant': 'standard', 'algo_name': 'random', 'trial_num': 0, 'seed': 0, 'parallelism': 'single_agent', 'env_name': 'NighttimeNibble'}
+2024-10-30 12:45:45,098 INFO    MainThread:20856 [wandb_init.py:init():591] wandb.init() called when a run is still active
+2024-10-30 12:46:11,990 WARNING MsgRouterThr:20856 [router.py:message_loop():77] message_loop has been closed

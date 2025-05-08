@@ -1,0 +1,111 @@
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+Traceback (most recent call last):
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 107, in <module>
+    eval_random_agent(config=config, base_worker_id=task_num)
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 37, in eval_random_agent
+    env = make_env(config, base_worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 93, in make_env
+    unity_env = create_unity_env(config, worker_id=worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 83, in create_unity_env
+    return UnityEnvironment(get_env_path(config), **kwargs)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 236, in __init__
+    aca_output = self._send_academy_parameters(rl_init_parameters_in)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 492, in _send_academy_parameters
+    return self._communicator.initialize(inputs, self._poll_process)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 126, in initialize
+    self.poll_for_timeout(poll_callback)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 111, in poll_for_timeout
+    poll_callback()
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 418, in _poll_process
+    raise UnityEnvironmentException(exc_msg)
+mlagents_envs.exception.UnityEnvironmentException: Environment shut down with return code -11 (SIGSEGV).
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+Traceback (most recent call last):
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 107, in <module>
+    eval_random_agent(config=config, base_worker_id=task_num)
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 37, in eval_random_agent
+    env = make_env(config, base_worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 93, in make_env
+    unity_env = create_unity_env(config, worker_id=worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 83, in create_unity_env
+    return UnityEnvironment(get_env_path(config), **kwargs)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 236, in __init__
+    aca_output = self._send_academy_parameters(rl_init_parameters_in)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 492, in _send_academy_parameters
+    return self._communicator.initialize(inputs, self._poll_process)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 126, in initialize
+    self.poll_for_timeout(poll_callback)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 111, in poll_for_timeout
+    poll_callback()
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 418, in _poll_process
+    raise UnityEnvironmentException(exc_msg)
+mlagents_envs.exception.UnityEnvironmentException: Environment shut down with return code -11 (SIGSEGV).
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+Traceback (most recent call last):
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 107, in <module>
+    eval_random_agent(config=config, base_worker_id=task_num)
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 37, in eval_random_agent
+    env = make_env(config, base_worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 93, in make_env
+    unity_env = create_unity_env(config, worker_id=worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 83, in create_unity_env
+    return UnityEnvironment(get_env_path(config), **kwargs)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 236, in __init__
+    aca_output = self._send_academy_parameters(rl_init_parameters_in)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 492, in _send_academy_parameters
+    return self._communicator.initialize(inputs, self._poll_process)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 126, in initialize
+    self.poll_for_timeout(poll_callback)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 111, in poll_for_timeout
+    poll_callback()
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 418, in _poll_process
+    raise UnityEnvironmentException(exc_msg)
+mlagents_envs.exception.UnityEnvironmentException: Environment shut down with return code -11 (SIGSEGV).
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+Traceback (most recent call last):
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 107, in <module>
+    eval_random_agent(config=config, base_worker_id=task_num)
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 37, in eval_random_agent
+    env = make_env(config, base_worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 93, in make_env
+    unity_env = create_unity_env(config, worker_id=worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 83, in create_unity_env
+    return UnityEnvironment(get_env_path(config), **kwargs)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 236, in __init__
+    aca_output = self._send_academy_parameters(rl_init_parameters_in)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 492, in _send_academy_parameters
+    return self._communicator.initialize(inputs, self._poll_process)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 126, in initialize
+    self.poll_for_timeout(poll_callback)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 111, in poll_for_timeout
+    poll_callback()
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 418, in _poll_process
+    raise UnityEnvironmentException(exc_msg)
+mlagents_envs.exception.UnityEnvironmentException: Environment shut down with return code -11 (SIGSEGV).
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+||||||||||||||||||||||||| ERROR |||||||||||||||||||||||||
+Traceback (most recent call last):
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 107, in <module>
+    eval_random_agent(config=config, base_worker_id=task_num)
+  File "/fs01/home/andrei/memory_bench/training_scripts/eval_random_agent.py", line 37, in eval_random_agent
+    env = make_env(config, base_worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 93, in make_env
+    unity_env = create_unity_env(config, worker_id=worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 83, in create_unity_env
+    return UnityEnvironment(get_env_path(config), **kwargs)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 236, in __init__
+    aca_output = self._send_academy_parameters(rl_init_parameters_in)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 492, in _send_academy_parameters
+    return self._communicator.initialize(inputs, self._poll_process)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 126, in initialize
+    self.poll_for_timeout(poll_callback)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 111, in poll_for_timeout
+    poll_callback()
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 418, in _poll_process
+    raise UnityEnvironmentException(exc_msg)
+mlagents_envs.exception.UnityEnvironmentException: Environment shut down with return code -11 (SIGSEGV).
+Training Complete.

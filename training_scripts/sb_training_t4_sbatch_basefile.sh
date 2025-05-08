@@ -2,8 +2,8 @@
 #SBATCH --time=8:00:00
 #SBATCH --mem=30G
 #SBATCH --qos=m2
-#SBATCH --gres=gpu:t4:1
-#SBATCH --exclude=gpu038,gpu063,gpu070,gpu061,gpu074,gpu111,gpu113,gpu091,gpu068,gpu062,gpu072,gpu069,gpu075,gpu017,gpu112,gpu114
+#SBATCH --gres=gpu:1
+#SBATCH --partition=t4v1,t4v2
 #SBATCH --cpus-per-task=8
 #SBATCH --job-name=mem
 #SBATCH --output=mem_%j.out

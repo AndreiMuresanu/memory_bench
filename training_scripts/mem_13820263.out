@@ -1,0 +1,67 @@
+/h/andrei/bin:/h/andrei/clang_14/bin:/h/andrei/cuda/bin:/h/andrei/cudnn/bin:/h/andrei/anaconda3/envs/unity_3/bin:/h/andrei/.local/lib:/h/andrei/anaconda3/bin:/h/andrei/anaconda3/condabin:/h/andrei/bin:/h/andrei/clang_14/bin:/h/andrei/cuda/bin:/h/andrei/cudnn/bin:/h/andrei/anaconda3/bin:/h/andrei/.local/lib:/opt/slurm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+wandb: Currently logged in as: atomictwoandrei (team-andrei). Use `wandb login --relogin` to force relogin
+wandb: - Waiting for wandb.init()...wandb: \ Waiting for wandb.init()...wandb: wandb version 0.18.5 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.15.8
+wandb: Run data is saved locally in /fs01/home/andrei/memory_bench/training_scripts/wandb/run-20241031_001337-2bljtr1n
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run lurking-crypt-4891
+wandb: ⭐️ View project at https://wandb.ai/team-andrei/ReMEMber
+wandb: 🚀 View run at https://wandb.ai/team-andrei/ReMEMber/runs/2bljtr1n
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=4194304"
+    "memorysetup-bucket-allocator-block-count=1"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=4194304"
+    "memorysetup-profiler-bucket-allocator-block-count=1"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=4194304"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+sys.argv: ['sb_training.py', '/h/andrei/memory_bench/training_scripts/sbatch_temp_configs/2024-10-31_00-13-02-696954_config.json']
+CONFIG PATH................ /h/andrei/memory_bench/training_scripts/sbatch_temp_configs/2024-10-31_00-13-02-696954_config.json
+Traceback (most recent call last):
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 492, in <module>
+    sb_training(config=config)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 305, in sb_training
+    env = make_env(config, worker_id= base_worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 93, in make_env
+    unity_env = create_unity_env(config, worker_id=worker_id)
+  File "/fs01/home/andrei/memory_bench/training_scripts/sb_training.py", line 83, in create_unity_env
+    return UnityEnvironment(get_env_path(config), **kwargs)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 236, in __init__
+    aca_output = self._send_academy_parameters(rl_init_parameters_in)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 492, in _send_academy_parameters
+    return self._communicator.initialize(inputs, self._poll_process)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 126, in initialize
+    self.poll_for_timeout(poll_callback)
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/rpc_communicator.py", line 111, in poll_for_timeout
+    poll_callback()
+  File "/fs01/home/andrei/ml-agents-release_20/ml-agents-envs/mlagents_envs/environment.py", line 418, in _poll_process
+    raise UnityEnvironmentException(exc_msg)
+mlagents_envs.exception.UnityEnvironmentException: Environment shut down with return code -11 (SIGSEGV).
+wandb: Waiting for W&B process to finish... (failed 1). Press Control-C to abort syncing.
+wandb: 🚀 View run lurking-crypt-4891 at: https://wandb.ai/team-andrei/ReMEMber/runs/2bljtr1n
+wandb: ️⚡ View job at https://wandb.ai/team-andrei/ReMEMber/jobs/QXJ0aWZhY3RDb2xsZWN0aW9uOjkyOTM3MDYz/version_details/v184
+wandb: Synced 6 W&B file(s), 0 media file(s), 2 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20241031_001337-2bljtr1n/logs

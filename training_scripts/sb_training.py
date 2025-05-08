@@ -299,7 +299,7 @@ def sb_training(config, base_worker_id=0):
 		sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
 		monitor_gym=False,  # auto-upload the videos of agents playing the game
 		save_code=False,  # optional
-		#mode='disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
+		mode='disabled'	# this makes it so nothing is logged and useful to avoid logging debugging runs
 	)
 
 	env = make_env(config, worker_id= base_worker_id)

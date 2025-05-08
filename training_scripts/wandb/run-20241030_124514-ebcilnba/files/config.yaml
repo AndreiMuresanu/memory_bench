@@ -1,0 +1,70 @@
+wandb_version: 1
+
+policy_type:
+  desc: null
+  value: CnnPolicy
+total_timesteps:
+  desc: null
+  value: 500000
+eval_every_n_steps:
+  desc: null
+  value: 2083
+eval_ep_batch_limit:
+  desc: null
+  value: 10
+verbosity:
+  desc: null
+  value: 2
+os:
+  desc: null
+  value: linux
+parallelism_override:
+  desc: null
+  value: single_agent
+task_configs:
+  desc: null
+  value: {}
+task_variant:
+  desc: null
+  value: standard
+algo_name:
+  desc: null
+  value: random
+trial_num:
+  desc: null
+  value: 0
+seed:
+  desc: null
+  value: 0
+parallelism:
+  desc: null
+  value: single_agent
+env_name:
+  desc: null
+  value: RecipeRecall
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.8
+    cli_version: 0.15.8
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1730306714.720814
+    t:
+      1:
+      - 1
+      - 55
+      2:
+      - 1
+      - 55
+      3:
+      - 16
+      - 23
+      - 24
+      - 34
+      - 35
+      4: 3.10.8
+      5: 0.15.8
+      8:
+      - 5

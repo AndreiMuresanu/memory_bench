@@ -107,12 +107,13 @@ if __name__ == '__main__':
 	#player_name = 'andrei'
 	#player_name = 'george'
 	#player_name = 'tati'
-	player_name = 'darci'
-	#player_name = 'test'
+	# player_name = 'darci'
+	player_name = 'test'
 
 	#env_info = ('AllergicAgent', 32, r'../unity_projects\memory_palace_2\Builds\AllergicAgent\windows\pixel_input\single_agent\memory_palace_2.exe')
 	#env_info = ('Hallway', 5, r'../unity_projects\memory_palace_2\Builds\Hallway\windows\pixel_input\single_agent\memory_palace_2.exe')
-	env_info = ('MatchingPairs', 5, r'../unity_projects\memory_palace_2\Builds\MatchingPairs\medium\windows\pixel_input\single_agent\memory_palace_2.exe')
+	# env_info = ('MatchingPairs', 5, r'../unity_projects\memory_palace_2\Builds\MatchingPairs\medium\windows\pixel_input\single_agent\memory_palace_2.exe')
+	env_info = ('MatchingPairs', 5, r'/h/andrei/memory_bench/Builds/AllergicRobot/standard/linux/pixel_input/single_agent/gamefile.x86_64')
 	#env_info = ('RecipeRecall', 27, r'../unity_projects\memory_palace_2\Builds\RecipeRecall\windows\pixel_input\single_agent\memory_palace_2.exe')
 	
 	env = human_env(env_name=env_info[0], path_to_env=env_info[2], save_dir=save_dir, player_name=player_name)
