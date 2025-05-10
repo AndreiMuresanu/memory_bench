@@ -29,7 +29,7 @@ Taken from the ML-Agents Low-Level Python API docs (https://unity-technologies.g
 
 ```python
 from mlagents_envs.environment import UnityEnvironment
-from mlagents_envs.side_channel import EngineConfigurationChannel
+from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 
 config_channel = EngineConfigurationChannel()
 config_channel.set_configuration_parameters(time_scale=100.0) # The time_scale parameter defines how quickly time will pass within the simulation
@@ -56,7 +56,7 @@ Taken from the ML-Agents Low-Level Python API docs (https://unity-technologies.g
 
 ```python
 from mlagents_envs.environment import UnityEnvironment
-from mlagents_envs.side_channel import EnvironmentParametersChannel
+from mlagents_envs.side_channel.environment_parameters_channel import EnvironmentParametersChannel
 
 setup_channel = EnvironmentParametersChannel()
 setup_channel.set_float_parameter("max_ingredient_count", -1)
@@ -90,7 +90,6 @@ Parameter side channels only support float parameters. To specify a desired list
 TODO: location of this import may change
 ```python
 from custom_side_channels import ListSideChannel
-
 
 reward_channel = ListSideChannel()
 reward_channel.send_list([1.0, 2.5, 3.0])  # this is the list of rewards you want your foods to have
