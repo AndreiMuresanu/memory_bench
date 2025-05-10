@@ -76,6 +76,22 @@ unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace
 
 Note that the probability a food is normal is: 1 - (allergic_prob + love_prob)
 
+## (Optional) Custom SideChannel For Specifying Exact Rewards
+
+Parameter side channels only support float parameters. To specify a desired list of food rewards, you may use the ListSideChannel class. Specifying this parameter will override max_ingredient_count, allergic_prob, allergic_tastiness, love_prob, love_tastiness, min_normal_tastiness, max_normal_tastiness. Example usage:
+
+TODO: location of this import may change
+```python
+from custom_side_channels import ListSideChannel
+
+
+reward_channel = ListSideChannel()
+reward_channel.send_list([1.0, 2.5, 3.0])  # this is the list of rewards you want your foods to have
+
+unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace_2/Builds/AllergicAgent/linux/pixel_input/multi_agent/gamefile.x86_64',
+                              side_channels=[reward_channel])
+```
+
 # Recipe Recall
 
 - (int) max_ingredient_count:  The size of the pool of ingredients to draw from each round. Can set to -1 to allow for the largest possible food count.
