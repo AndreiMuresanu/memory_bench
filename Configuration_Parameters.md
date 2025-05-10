@@ -79,7 +79,7 @@ unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace
 - (float) love_tastiness: The tastiness of an ingredient the agent loves (ex. 5)
 - (float) min_normal_tastiness: The minimum tastiness of a normal food (ex. -0.1)
 - (float) max_normal_tastiness: The maximum tastiness of a normal food (ex. 1)
-- (float) arena_scale: Controls the size of the arena. Must in range: (0, 1)
+- (float) arena_scale: Controls the size of the arena. Must in range: (0, 1]
 
 Note that the probability a food is normal is: 1 - (allergic_prob + love_prob)
 
