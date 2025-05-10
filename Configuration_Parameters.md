@@ -67,7 +67,7 @@ unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace
 
 ## All Tasks
 
-- (float) overview_camera_on_float_param: The overview camera shows a bird's eye view of the entire scene. This parameter toggles whether the overview camera activated. If it has a value of 1.0 it will be activated. Otherwise, it will be turned off. Keeping the overview camera off slightly improves performance.
+- (float) overview_camera_on: The overview camera shows a bird's eye view of the entire scene. This parameter toggles whether the overview camera activated. If it has a value of 1.0 it will be activated. Otherwise, it will be turned off. Keeping the overview camera off slightly improves performance.
 
 ## Allergic Robot
 
