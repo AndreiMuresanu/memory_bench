@@ -6,6 +6,8 @@ Configuration Parameters
 ## Usage
 
 ```python
+from mlagents_envs.environment import UnityEnvironment
+
 unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace_2/Builds/AllergicAgent/linux/pixel_input/multi_agent/gamefile.x86_64', # the path to the task executable
                               seed=2 # sets the seed for all random processes within the task environment
                             )
@@ -26,6 +28,9 @@ Taken from the ML-Agents Low-Level Python API docs (https://unity-technologies.g
 ## Usage
 
 ```python
+from mlagents_envs.environment import UnityEnvironment
+from mlagents_envs.side_channel import EnvironmentParametersChannel
+
 config_channel = EngineConfigurationChannel()
 config_channel.set_configuration_parameters(time_scale=100.0) # The time_scale parameter defines how quickly time will pass within the simulation
 
@@ -48,6 +53,9 @@ Taken from the ML-Agents Low-Level Python API docs (https://unity-technologies.g
 # Task Parameter Usage Example
 
 ```python
+from mlagents_envs.environment import UnityEnvironment
+from mlagents_envs.side_channel import EnvironmentParametersChannel
+
 setup_channel = EnvironmentParametersChannel()
 setup_channel.set_float_parameter("max_ingredient_count", -1)
 
