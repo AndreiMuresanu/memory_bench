@@ -29,7 +29,7 @@ Taken from the ML-Agents Low-Level Python API docs (https://unity-technologies.g
 
 ```python
 from mlagents_envs.environment import UnityEnvironment
-from mlagents_envs.side_channel import EnvironmentParametersChannel
+from mlagents_envs.side_channel import EngineConfigurationChannel
 
 config_channel = EngineConfigurationChannel()
 config_channel.set_configuration_parameters(time_scale=100.0) # The time_scale parameter defines how quickly time will pass within the simulation
