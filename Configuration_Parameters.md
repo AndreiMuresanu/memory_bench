@@ -1,11 +1,13 @@
 Configuration Parameters
 ===
 
-# General Environment Parameters
+# Unity Environment Parameters
 
 ## Usage
 
 ```python
+from mlagents_envs.environment import UnityEnvironment
+
 unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace_2/Builds/AllergicAgent/linux/pixel_input/multi_agent/gamefile.x86_64', # the path to the task executable
                               seed=2 # sets the seed for all random processes within the task environment
                             )
@@ -21,11 +23,14 @@ Taken from the ML-Agents Low-Level Python API docs (https://unity-technologies.g
 - side_channels: provides a way to exchange data with the Unity simulation that is not related to the reinforcement learning loop. For example: configurations or properties. More on them in the Side Channels doc (https://unity-technologies.github.io/ml-agents/Custom-SideChannels/).
 
 
-# General Configuration Parameters
+# Unity Configuration Parameters
 
 ## Usage
 
 ```python
+from mlagents_envs.environment import UnityEnvironment
+from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
+
 config_channel = EngineConfigurationChannel()
 config_channel.set_configuration_parameters(time_scale=100.0) # The time_scale parameter defines how quickly time will pass within the simulation
 
@@ -45,9 +50,14 @@ Taken from the ML-Agents Low-Level Python API docs (https://unity-technologies.g
 - capture_frame_rate Instructs the simulation to consider time between updates to always be constant, regardless of the actual frame rate.
 
 
-# Task Parameter Usage Example
+# Task Parameter
+
+## Usage
 
 ```python
+from mlagents_envs.environment import UnityEnvironment
+from mlagents_envs.side_channel.environment_parameters_channel import EnvironmentParametersChannel
+
 setup_channel = EnvironmentParametersChannel()
 setup_channel.set_float_parameter("max_ingredient_count", -1)
 
@@ -55,7 +65,11 @@ unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace
                               side_channels=[setup_channel])
 ```
 
-# Allergic Robot
+## All Tasks
+
+- (float) overview_camera_on: The overview camera shows a bird's eye view of the entire scene. This parameter toggles whether the overview camera activated. If it has a value of 1.0 it will be activated. Otherwise, it will be turned off. Keeping the overview camera off slightly improves performance.
+
+## Allergic Robot
 
 - (int) max_ingredient_count:  The size of the pool of ingredients to draw from each round. Can set to -1 to allow for the largest possible food count.
 - (int) available_ingredient_count: The number of ingredients to sample each round.
@@ -65,10 +79,26 @@ unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace
 - (float) love_tastiness: The tastiness of an ingredient the agent loves (ex. 5)
 - (float) min_normal_tastiness: The minimum tastiness of a normal food (ex. -0.1)
 - (float) max_normal_tastiness: The maximum tastiness of a normal food (ex. 1)
+- (float) arena_scale: Controls the size of the arena. Must in range: (0, 1]
 
 Note that the probability a food is normal is: 1 - (allergic_prob + love_prob)
 
-# Recipe Recall
+### (Optional) Custom SideChannel For Specifying Exact Rewards
+
+Parameter side channels only support float parameters. To specify a desired list of food rewards, you may use the ListSideChannel class. Specifying this parameter will override max_ingredient_count, allergic_prob, allergic_tastiness, love_prob, love_tastiness, min_normal_tastiness, max_normal_tastiness. Example usage:
+
+TODO: location of this import may change
+```python
+from custom_side_channels import ListSideChannel
+
+reward_channel = ListSideChannel()
+reward_channel.send_list([1.0, 2.5, 3.0])  # this is the list of rewards you want your foods to have
+
+unity_env = UnityEnvironment('/content/memory_bench/unity_projects/memory_palace_2/Builds/AllergicAgent/linux/pixel_input/multi_agent/gamefile.x86_64',
+                              side_channels=[reward_channel])
+```
+
+## Recipe Recall
 
 - (int) max_ingredient_count:  The size of the pool of ingredients to draw from each round. Can set to -1 to allow for the largest possible food count.
 - (int) available_ingredient_count: The number of ingredients to sample each round.
@@ -78,16 +108,16 @@ Note that the probability a food is normal is: 1 - (allergic_prob + love_prob)
 - (float) min_tastiness: The minimum tastiness of a recipe.
 - (float) max_tastiness: The maximum tastiness of a recipe.
 
-# Matching Pairs
+## Matching Pairs
 
 - (int) max_ingredient_count:  The size of the pool of ingredients to draw from each round. Can set to -1 to allow for the largest possible food count.
 - (int) available_ingredient_count: The number of ingredients to sample each round.
 - (float) match_reward: The amount of reward recieved each time the agent matches a pair.
 
-# Hallway
+## Hallway
 
 None
 
-# custom modalities ??
+## custom modalities ??
 
 - make camera clipping range a parameters so that all tasks can have a partial observability parameter
